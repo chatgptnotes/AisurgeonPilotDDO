@@ -1,0 +1,351 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                    SEED_APPOINTMENTS.sql - COMPLETE OVERVIEW                   ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ FILES CREATED                                                                 │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ 1. SEED_APPOINTMENTS.sql (22KB, 616 lines)                                   │
+│    → Main seed script for 120 appointments                                   │
+│                                                                               │
+│ 2. README_SEED_APPOINTMENTS.md (12KB)                                        │
+│    → Complete documentation, usage guide, troubleshooting                    │
+│                                                                               │
+│ 3. SEED_DATA_EXECUTION_ORDER.md (11KB)                                       │
+│    → Step-by-step execution guide with verification                          │
+│                                                                               │
+│ 4. SEED_APPOINTMENTS_SUMMARY.md                                              │
+│    → Quick reference and stats overview                                      │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ DATA STRUCTURE: 120 APPOINTMENTS                                             │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│ PAST APPOINTMENTS (100) - Last 6 months to yesterday                         │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━                      │
+│                                                                               │
+│   ┌─────────────────────────────────────────────────────────┐               │
+│   │ COMPLETED: 70 appointments (58.3%)                      │               │
+│   │ ─────────────────────────────────────────────────────── │               │
+│   │ • Payment Status: PAID                                  │               │
+│   │ • Payment Methods: Cash, Card, UPI, Online              │               │
+│   │ • Total Revenue: ~₹108,000                              │               │
+│   │ • Avg Payment: ~₹1,543                                  │               │
+│   │ • Consultation Notes: Included                          │               │
+│   │ • Treatment Records: Complete                           │               │
+│   └─────────────────────────────────────────────────────────┘               │
+│                                                                               │
+│   ┌─────────────────────────────────────────────────────────┐               │
+│   │ CANCELLED: 20 appointments (16.7%)                      │               │
+│   │ ─────────────────────────────────────────────────────── │               │
+│   │ • Cancellation Reasons: 10 types                        │               │
+│   │   - Patient fell sick                                   │               │
+│   │   - Emergency at work                                   │               │
+│   │   - Transportation issues                               │               │
+│   │   - Rescheduled                                         │               │
+│   │   - Doctor unavailable                                  │               │
+│   │   - Personal emergency                                  │               │
+│   │   - Weather conditions                                  │               │
+│   │   - Feeling better                                      │               │
+│   │   - Financial constraints                               │               │
+│   │   - Alternative treatment                               │               │
+│   │ • Payment Status: Pending or Refunded                   │               │
+│   │ • Refunded: ~6 appointments                             │               │
+│   │ • Cancellation Timestamp: Recorded                      │               │
+│   └─────────────────────────────────────────────────────────┘               │
+│                                                                               │
+│   ┌─────────────────────────────────────────────────────────┐               │
+│   │ NO-SHOW: 10 appointments (8.3%)                         │               │
+│   │ ─────────────────────────────────────────────────────── │               │
+│   │ • Status: No-Show                                       │               │
+│   │ • Notes: Patient did not appear                         │               │
+│   │ • Payment Status: Pending                               │               │
+│   │ • Revenue Loss: ~₹15,250                                │               │
+│   └─────────────────────────────────────────────────────────┘               │
+│                                                                               │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│ UPCOMING APPOINTMENTS (20) - Tomorrow to next 30 days                        │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━                      │
+│                                                                               │
+│   ┌─────────────────────────────────────────────────────────┐               │
+│   │ SCHEDULED: 10 appointments (8.3%)                       │               │
+│   │ ─────────────────────────────────────────────────────── │               │
+│   │ • Status: Pending Confirmation                          │               │
+│   │ • Payment Required: Yes                                 │               │
+│   │ • Payment Status: Pending                               │               │
+│   │ • Reminder Sent: Some                                   │               │
+│   │ • Confirmation Sent: No                                 │               │
+│   └─────────────────────────────────────────────────────────┘               │
+│                                                                               │
+│   ┌─────────────────────────────────────────────────────────┐               │
+│   │ CONFIRMED: 10 appointments (8.3%)                       │               │
+│   │ ─────────────────────────────────────────────────────── │               │
+│   │ • Status: Confirmed                                     │               │
+│   │ • Payment Required: Yes                                 │               │
+│   │ • Payment Status: Pending                               │               │
+│   │ • Reminder Sent: Yes                                    │               │
+│   │ • Confirmation Sent: Yes                                │               │
+│   │ • Total Value: ~₹31,000                                 │               │
+│   └─────────────────────────────────────────────────────────┘               │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ APPOINTMENT TYPE DISTRIBUTION                                                │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│   OPD (In-Person)           ████████████████████████ 60% (~72 appts)        │
+│   Online (Video/Phone)      ████████████ 30% (~36 appts)                    │
+│   Follow-up                 ████ 10% (~12 appts)                            │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ CONSULTATION MODE BREAKDOWN                                                  │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│   In-Person                 ███████████████████████████ (~75 appts)         │
+│   Video Call                ████████ (~25 appts)                            │
+│   Phone Call                ██████ (~20 appts)                              │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ SPECIALTY DISTRIBUTION (10 Doctors × ~12 appointments each)                 │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│   1. Orthopedics         │ Dr. Murali Krishna      │ ~12 appts             │
+│   2. Cardiology          │ Dr. Priya Sharma        │ ~12 appts             │
+│   3. Neurology           │ Dr. Rajesh Patel        │ ~12 appts             │
+│   4. Gynecology          │ Dr. Anjali Desai        │ ~12 appts             │
+│   5. Pediatrics          │ Dr. Amit Kumar          │ ~12 appts             │
+│   6. Dermatology         │ Dr. Sneha Reddy         │ ~12 appts             │
+│   7. General Surgery     │ Dr. Vikram Singh        │ ~12 appts             │
+│   8. ENT                 │ Dr. Meera Nair          │ ~12 appts             │
+│   9. Ophthalmology       │ Dr. Arjun Mehta         │ ~12 appts             │
+│   10. Psychiatry         │ Dr. Kavita Iyer         │ ~12 appts             │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ REALISTIC SYMPTOMS BY SPECIALTY                                              │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│   Orthopedics    → Knee pain, back pain, joint stiffness, sprains           │
+│   Cardiology     → Chest pain, palpitations, blood pressure, breathlessness │
+│   Neurology      → Headaches, numbness, tremors, seizures                   │
+│   Gynecology     → Pregnancy care, menstrual issues, PCOS                   │
+│   Pediatrics     → Fever, vaccinations, asthma, allergies                   │
+│   Dermatology    → Acne, rashes, pigmentation, hair loss                    │
+│   Surgery        → Hernia, gallstones, post-op checks                       │
+│   ENT            → Sinusitis, ear infections, tonsillitis                   │
+│   Ophthalmology  → Vision issues, cataracts, glaucoma                       │
+│   Psychiatry     → Depression, anxiety, sleep disorders                     │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ PAYMENT SUMMARY                                                              │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│   ┌────────────────────┬─────────┬───────────────┬─────────────────┐        │
+│   │ Payment Status     │ Count   │ Total Amount  │ Avg per Appt    │        │
+│   ├────────────────────┼─────────┼───────────────┼─────────────────┤        │
+│   │ Paid               │ 70      │ ₹108,000      │ ₹1,543          │        │
+│   │ Pending            │ 40      │ ₹62,000       │ ₹1,550          │        │
+│   │ Refunded           │ 6       │ ₹9,000        │ ₹1,500          │        │
+│   │ Failed             │ 4       │ ₹6,000        │ ₹1,500          │        │
+│   └────────────────────┴─────────┴───────────────┴─────────────────┘        │
+│                                                                               │
+│   Payment Methods Distribution:                                              │
+│   • Cash:     ~25 transactions                                               │
+│   • Card:     ~20 transactions                                               │
+│   • UPI:      ~15 transactions                                               │
+│   • Online:   ~10 transactions                                               │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ BOOKING SOURCES                                                              │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│   Staff Entry           ████████ (~30 appts)                                │
+│   Patient Portal        ████████ (~30 appts)                                │
+│   WhatsApp              ████████ (~30 appts)                                │
+│   Phone                 ████████ (~30 appts)                                │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ APPOINTMENT DURATION                                                         │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│   30 minutes            ███████████ (~40 appts)                             │
+│   45 minutes            ███████████ (~40 appts)                             │
+│   60 minutes            ███████████ (~40 appts)                             │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ONLINE CONSULTATION FEATURES                                                 │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│   • Video consultations with Google Meet style links                         │
+│   • Meeting IDs generated for tracking                                       │
+│   • Meeting passwords (where applicable)                                     │
+│   • ~45 appointments have online consultation links                          │
+│   • Ready for telemedicine feature testing                                   │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ NOTIFICATION TRACKING                                                        │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│   Reminders Sent:       ~110 appointments (all past + confirmed upcoming)    │
+│   Confirmations Sent:   ~80 appointments (past completed + confirmed)        │
+│   Pending Notifications: ~10 appointments (newly scheduled)                  │
+│                                                                               │
+│   Ready for testing:                                                          │
+│   • WhatsApp notifications                                                    │
+│   • Email reminders                                                           │
+│   • SMS confirmations                                                         │
+│   • Push notifications                                                        │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ EXECUTION INSTRUCTIONS                                                       │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│   STEP 1: Run Prerequisites                                                  │
+│   ─────────────────────────────────────────────────────────────────          │
+│   1. migrations/08_multi_tenant_setup.sql                                    │
+│   2. migrations/09_appointments_notifications.sql                            │
+│                                                                               │
+│   STEP 2: Run Seed Scripts in Order                                          │
+│   ─────────────────────────────────────────────────────────────────          │
+│   1. SEED_REALISTIC_DATA.sql          (tenant + 10 doctors)                  │
+│   2. SEED_PATIENTS_APPOINTMENTS.sql   (50 patients)                          │
+│   3. SEED_APPOINTMENTS.sql            (120 appointments) ← THIS SCRIPT       │
+│                                                                               │
+│   STEP 3: Execute in Supabase                                                │
+│   ─────────────────────────────────────────────────────────────────          │
+│   • Open Supabase SQL Editor                                                 │
+│   • Copy entire SEED_APPOINTMENTS.sql                                        │
+│   • Click Run (or Ctrl/Cmd + Enter)                                          │
+│   • Wait 5-15 seconds for completion                                         │
+│                                                                               │
+│   STEP 4: Verify                                                             │
+│   ─────────────────────────────────────────────────────────────────          │
+│   SELECT COUNT(*) FROM appointments;  -- Should return 120                   │
+│   SELECT status, COUNT(*) FROM appointments GROUP BY status;                 │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ EXPECTED CONSOLE OUTPUT                                                      │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│   ========================================                                    │
+│   Starting Appointment Seed Data Creation                                    │
+│   ========================================                                    │
+│   Step 1: Fetching doctor information...                                     │
+│   Found 10 doctors                                                            │
+│   Step 2: Fetching patient information...                                    │
+│   Found 50 patients                                                           │
+│   Step 3: Creating 100 past appointments...                                  │
+│     Created 20 past appointments...                                          │
+│     Created 40 past appointments...                                          │
+│     Created 60 past appointments...                                          │
+│     Created 80 past appointments...                                          │
+│     Created 100 past appointments...                                         │
+│   Completed: 100 past appointments created                                   │
+│     - 70 completed appointments                                              │
+│     - 20 cancelled appointments                                              │
+│     - 10 no-show appointments                                                │
+│   Step 4: Creating 20 upcoming appointments...                               │
+│     Created 10 upcoming appointments...                                      │
+│     Created 20 upcoming appointments...                                      │
+│   Completed: 20 upcoming appointments created                                │
+│     - 10 scheduled appointments                                              │
+│     - 10 confirmed appointments                                              │
+│                                                                               │
+│   ========================================                                    │
+│   APPOINTMENT SEED DATA SUMMARY                                              │
+│   ========================================                                    │
+│   Total Appointments Created: 120                                            │
+│   Distribution across 10 Doctors, 50 Patients                                │
+│   Date Range: Last 6 months to next 30 days                                  │
+│   ========================================                                    │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ USE CASES COVERED                                                            │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│   ✓ Dashboard Statistics                                                     │
+│   ✓ Calendar View with Appointments                                          │
+│   ✓ Payment Tracking and Reports                                             │
+│   ✓ Doctor Schedule Management                                               │
+│   ✓ Patient Appointment History                                              │
+│   ✓ Cancellation Analysis                                                    │
+│   ✓ No-Show Tracking                                                         │
+│   ✓ Revenue Reports by Date/Doctor                                           │
+│   ✓ Online Consultation Testing                                              │
+│   ✓ Notification System Testing                                              │
+│   ✓ Booking Flow Testing                                                     │
+│   ✓ Appointment Filtering (status, date, doctor)                             │
+│   ✓ Patient Portal Integration                                               │
+│   ✓ Analytics and Trends                                                     │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ FILE STRUCTURE                                                               │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│   database/                                                                   │
+│   ├── SEED_APPOINTMENTS.sql                  (22KB, 616 lines)               │
+│   │   └── Main seed script with PL/pgSQL logic                               │
+│   │                                                                           │
+│   ├── README_SEED_APPOINTMENTS.md            (12KB)                          │
+│   │   └── Complete documentation and troubleshooting                         │
+│   │                                                                           │
+│   ├── SEED_DATA_EXECUTION_ORDER.md           (11KB)                          │
+│   │   └── Step-by-step execution guide                                       │
+│   │                                                                           │
+│   ├── SEED_APPOINTMENTS_SUMMARY.md                                           │
+│   │   └── Quick reference and statistics                                     │
+│   │                                                                           │
+│   └── SEED_APPOINTMENTS_COMPLETE.txt                                         │
+│       └── This visual overview                                               │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ KEY INFORMATION                                                              │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│   Tenant ID:       a1b2c3d4-e5f6-4a5b-8c7d-9e8f7a6b5c4d                     │
+│   Total Records:   120 appointments                                          │
+│   File Size:       22KB                                                      │
+│   Lines of Code:   616 lines                                                 │
+│   Execution Time:  5-15 seconds                                              │
+│   Dependencies:    SEED_REALISTIC_DATA.sql, SEED_PATIENTS_APPOINTMENTS.sql   │
+│   Created:         2025-11-15                                                │
+│   Version:         1.0                                                       │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                          READY TO EXECUTE!                                     ║
+║                                                                                ║
+║  Copy SEED_APPOINTMENTS.sql contents into Supabase SQL Editor and run.        ║
+║  Verify with: SELECT COUNT(*) FROM appointments; -- Should return 120         ║
+║                                                                                ║
+║  For support, see README_SEED_APPOINTMENTS.md                                 ║
+╚════════════════════════════════════════════════════════════════════════════════╝
