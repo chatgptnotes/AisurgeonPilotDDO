@@ -5,13 +5,21 @@
 
 import { authenticator } from 'otplib';
 import { supabase } from '@/integrations/supabase/client';
-import * as crypto from 'crypto-js';
 
 // Configure TOTP settings
 authenticator.options = {
   step: 30, // 30 second time step
   window: 1, // Allow 1 time step before/after for clock skew
 };
+
+// Helper function to hash strings using Web Crypto API (browser-native)
+async function hashString(str: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(str);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 export interface TOTPSetupData {
   secret: string;
@@ -67,8 +75,8 @@ export class TOTPService {
    * @param code Plain text backup code
    * @returns Hashed code
    */
-  static hashBackupCode(code: string): string {
-    return crypto.SHA256(code.toLowerCase().trim()).toString();
+  static async hashBackupCode(code: string): Promise<string> {
+    return hashString(code.toLowerCase().trim());
   }
 
   /**
@@ -108,7 +116,9 @@ export class TOTPService {
     const backupCodes = this.generateBackupCodes();
 
     // Hash backup codes for storage
-    const hashedBackupCodes = backupCodes.map(code => this.hashBackupCode(code));
+    const hashedBackupCodes = await Promise.all(
+      backupCodes.map(code => this.hashBackupCode(code))
+    );
 
     // Store secret and backup codes in database (but don't enable yet)
     const { error } = await supabase
@@ -251,7 +261,7 @@ export class TOTPService {
 
     // Try verifying as backup code
     if (user.backup_codes && user.backup_codes.length > 0) {
-      const hashedToken = this.hashBackupCode(token);
+      const hashedToken = await this.hashBackupCode(token);
       const codeIndex = user.backup_codes.indexOf(hashedToken);
 
       if (codeIndex !== -1) {
@@ -438,7 +448,9 @@ export class TOTPService {
    */
   static async regenerateBackupCodes(userId: string): Promise<string[]> {
     const newCodes = this.generateBackupCodes();
-    const hashedCodes = newCodes.map(code => this.hashBackupCode(code));
+    const hashedCodes = await Promise.all(
+      newCodes.map(code => this.hashBackupCode(code))
+    );
 
     const { error } = await supabase
       .from('users')
