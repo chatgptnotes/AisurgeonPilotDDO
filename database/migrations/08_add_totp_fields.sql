@@ -286,3 +286,4 @@ BEGIN
 
   RAISE NOTICE '✅ Migration 08 completed successfully';
 END $$;
+

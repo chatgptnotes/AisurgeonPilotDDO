@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { whatsappService } from '@/services/whatsappService';
 import { emailService } from '@/services/emailService';
+import { useTenant } from '@/contexts/TenantContext';
 
 interface Props {
   doctorId: string;
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export function QuickBookingModal({ doctorId, open, onClose, onSuccess }: Props) {
+  const { currentTenant } = useTenant();
   const [loading, setLoading] = useState(false);
   const [searchPhone, setSearchPhone] = useState('');
   const [selectedPatient, setSelectedPatient] = useState<any | null>(null);
@@ -142,19 +144,39 @@ export function QuickBookingModal({ doctorId, open, onClose, onSuccess }: Props)
         meetingLink = doctorData?.zoom_meeting_link || '';
       }
 
+      // Calculate duration in minutes
+      const durationMinutes = Math.round((endAt.getTime() - startAt.getTime()) / (1000 * 60));
+
+      // Get tenant_id from context or doctor's tenant
+      let tenantId = currentTenant?.id;
+      if (!tenantId) {
+        // Fallback: get tenant_id from doctor
+        const { data: doctorTenantData } = await supabase
+          .from('doctors')
+          .select('tenant_id')
+          .eq('id', doctorId)
+          .single();
+        tenantId = doctorTenantData?.tenant_id;
+      }
+
       // Create appointment with 'scheduled' status - doctor must confirm manually
       const { data: appointment, error } = await supabase
         .from('appointments')
         .insert({
           doctor_id: doctorId,
           patient_id: selectedPatient.id,
+          tenant_id: tenantId,
           start_at: startAt.toISOString(),
           end_at: endAt.toISOString(),
+          appointment_date: format(startAt, 'yyyy-MM-dd'),
+          duration_minutes: durationMinutes,
+          appointment_type: mode === 'video' ? 'video_consultation' : 'in_person',
           status: 'scheduled', // Changed from 'confirmed' - requires doctor confirmation
           mode,
           symptoms: symptoms.trim() || null,
           reason: reason.trim() || null,
           meeting_link: meetingLink || null,
+          booked_by: 'staff', // Indicates this was booked by staff via QuickBookingModal
         })
         .select()
         .single();

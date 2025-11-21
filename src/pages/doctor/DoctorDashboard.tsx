@@ -317,9 +317,8 @@ const DoctorDashboard: React.FC = () => {
     if (!doctorId) return;
 
     try {
+      // Use appointment_date for more reliable filtering (set by trigger)
       const today = format(new Date(), 'yyyy-MM-dd');
-      const startOfToday = `${today}T00:00:00`;
-      const endOfToday = `${today}T23:59:59`;
 
       const { data, error } = await supabase
         .from('appointments')
@@ -335,8 +334,7 @@ const DoctorDashboard: React.FC = () => {
           )
         `)
         .eq('doctor_id', doctorId)
-        .gte('start_at', startOfToday)
-        .lte('start_at', endOfToday)
+        .eq('appointment_date', today)
         .in('status', ['scheduled', 'confirmed', 'in_progress', 'completed'])
         .order('start_at', { ascending: true });
 
@@ -354,15 +352,13 @@ const DoctorDashboard: React.FC = () => {
     try {
       const tomorrow = format(addDays(new Date(), 1), 'yyyy-MM-dd');
       const weekEnd = format(addDays(new Date(), 7), 'yyyy-MM-dd');
-      const startOfTomorrow = `${tomorrow}T00:00:00`;
-      const endOfWeek = `${weekEnd}T23:59:59`;
 
       const { data, error } = await supabase
         .from('appointments')
-        .select('start_at')
+        .select('appointment_date')
         .eq('doctor_id', doctorId)
-        .gte('start_at', startOfTomorrow)
-        .lte('start_at', endOfWeek)
+        .gte('appointment_date', tomorrow)
+        .lte('appointment_date', weekEnd)
         .in('status', ['scheduled', 'confirmed']);
 
       if (error) throw error;
@@ -370,7 +366,7 @@ const DoctorDashboard: React.FC = () => {
       // Group by date
       const grouped = new Map<string, number>();
       (data || []).forEach((apt) => {
-        const dateKey = format(new Date(apt.start_at), 'yyyy-MM-dd');
+        const dateKey = apt.appointment_date;
         grouped.set(dateKey, (grouped.get(dateKey) || 0) + 1);
       });
 
