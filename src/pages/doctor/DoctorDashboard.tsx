@@ -201,31 +201,84 @@ const DoctorDashboard: React.FC = () => {
         return;
       }
 
-      const { data, error } = await supabase
+      // STRATEGY 1: Try fetching by user_id (preferred method)
+      let { data, error } = await supabase
         .from('doctors')
-        .select('id, full_name, email')
+        .select('id, full_name, email, user_id')
         .eq('user_id', user?.id)
         .single();
 
-      if (error) {
-        console.error('Doctor profile error:', error);
-        // If doctor not found, could be auth issue
-        if (error.code === 'PGRST116') {
+      // STRATEGY 2: If not found by user_id, try fetching by email (fallback)
+      if (error && error.code === 'PGRST116') {
+        console.log('Doctor not found by user_id, trying email fallback...');
+
+        // Get email from localStorage or auth user
+        const doctorEmail = localStorage.getItem('doctor_email') || user?.email;
+
+        if (doctorEmail) {
+          const { data: emailData, error: emailError } = await supabase
+            .from('doctors')
+            .select('id, full_name, email, user_id')
+            .eq('email', doctorEmail.toLowerCase())
+            .single();
+
+          if (emailError) {
+            console.error('Doctor profile not found by email either:', emailError);
+            toast.error('Doctor profile not found. Please contact administrator.');
+            setTimeout(() => {
+              localStorage.clear();
+              navigate('/login');
+            }, 2000);
+            return;
+          }
+
+          // Found by email! Now link this doctor to the auth user
+          if (emailData) {
+            data = emailData;
+
+            // Update the doctor record to link it to the auth user
+            if (!emailData.user_id || emailData.user_id !== user?.id) {
+              console.log('Linking doctor profile to auth user...');
+              const { error: updateError } = await supabase
+                .from('doctors')
+                .update({ user_id: user?.id })
+                .eq('id', emailData.id);
+
+              if (updateError) {
+                console.error('Failed to link doctor to auth user:', updateError);
+              } else {
+                console.log('Successfully linked doctor profile to auth user');
+                toast.success('Profile linked successfully!');
+              }
+            }
+          }
+        } else {
           toast.error('Doctor profile not found. Please contact administrator.');
           setTimeout(() => {
             localStorage.clear();
             navigate('/login');
           }, 2000);
+          return;
         }
+      } else if (error) {
+        // Some other error occurred
+        console.error('Doctor profile error:', error);
+        toast.error('Failed to load profile. Please try again.');
+        setTimeout(() => {
+          localStorage.clear();
+          navigate('/login');
+        }, 2000);
         return;
       }
 
+      // Successfully found doctor profile
       if (data) {
         setDoctorId(data.id);
         setDoctorProfile({
           full_name: data.full_name || 'Dr. User',
           email: data.email || user?.email || 'doctor@example.com',
         });
+        console.log('Doctor profile loaded successfully:', data.full_name);
       }
     } catch (err) {
       console.error('Error fetching doctor profile:', err);

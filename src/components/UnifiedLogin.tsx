@@ -10,6 +10,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, User, Hospital } from 'lucide-react';
 import { toast } from 'sonner';
+import { TOTPService } from '@/services/totpService';
+import { TOTPVerify } from '@/components/auth/TOTPVerify';
 
 const UnifiedLogin: React.FC = () => {
   const navigate = useNavigate();
@@ -35,6 +37,42 @@ const UnifiedLogin: React.FC = () => {
   const [showDoctorPassword, setShowDoctorPassword] = useState(false);
   const [doctorLoading, setDoctorLoading] = useState(false);
   const [doctorError, setDoctorError] = useState<string | null>(null);
+
+  // TOTP verification state
+  const [showTOTPVerify, setShowTOTPVerify] = useState(false);
+  const [totpUserId, setTotpUserId] = useState<string>('');
+  const [totpUserRole, setTotpUserRole] = useState<'doctor' | 'staff'>('doctor');
+  const [pendingDoctorData, setPendingDoctorData] = useState<any>(null);
+
+  // Generate device fingerprint for trusted device functionality
+  const getDeviceFingerprint = (): string => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.textBaseline = 'top';
+      ctx.font = '14px Arial';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#f60';
+      ctx.fillRect(125, 1, 62, 20);
+      ctx.fillStyle = '#069';
+      ctx.fillText('Hello', 2, 15);
+      ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+      ctx.fillText('World', 4, 17);
+    }
+    const canvasData = canvas.toDataURL();
+    const screenInfo = `${screen.width}x${screen.height}x${screen.colorDepth}`;
+    const navigatorInfo = `${navigator.userAgent}${navigator.language}${navigator.platform}`;
+    const combined = `${canvasData}${screenInfo}${navigatorInfo}`;
+
+    // Simple hash function
+    let hash = 0;
+    for (let i = 0; i < combined.length; i++) {
+      const char = combined.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return Math.abs(hash).toString(36);
+  };
 
   const handleStaffLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -168,23 +206,27 @@ const UnifiedLogin: React.FC = () => {
 
       console.log('Doctor found:', doctor.full_name, 'Doctor user_id:', doctor.user_id);
 
-      // Store doctor info
-      localStorage.setItem('doctor_id', doctor.id);
-      localStorage.setItem('doctor_name', doctor.full_name);
-      localStorage.setItem('doctor_email', doctor.email);
-      localStorage.setItem('user_id', authData.user.id);
-      localStorage.setItem('user_role', 'doctor');
+      // Check if user requires 2FA
+      const requires2FA = await TOTPService.requiresTOTP(authData.user.id);
 
-      toast.success(`Welcome back, ${doctor.full_name}!`);
+      if (requires2FA) {
+        // Check if device is trusted
+        const deviceFingerprint = getDeviceFingerprint();
+        const isTrusted = await TOTPService.isTrustedDevice(authData.user.id, deviceFingerprint);
 
-      // Check if there's a return URL from session timeout
-      const returnUrl = localStorage.getItem('returnUrl');
-      if (returnUrl) {
-        localStorage.removeItem('returnUrl');
-        navigate(returnUrl);
-      } else {
-        navigate('/doctor/dashboard');
+        if (!isTrusted) {
+          // Show TOTP verification screen
+          setTotpUserId(authData.user.id);
+          setTotpUserRole('doctor');
+          setPendingDoctorData(doctor);
+          setShowTOTPVerify(true);
+          setDoctorLoading(false);
+          return;
+        }
       }
+
+      // Complete login (no 2FA or trusted device)
+      completeDoctorLogin(doctor, authData.user.id);
     } catch (error) {
       console.error('Doctor login error:', error);
       setDoctorError('An error occurred during login');
@@ -192,6 +234,66 @@ const UnifiedLogin: React.FC = () => {
       setDoctorLoading(false);
     }
   };
+
+  const completeDoctorLogin = (doctor: any, userId: string) => {
+    // Store doctor info
+    localStorage.setItem('doctor_id', doctor.id);
+    localStorage.setItem('doctor_name', doctor.full_name);
+    localStorage.setItem('doctor_email', doctor.email);
+    localStorage.setItem('user_id', userId);
+    localStorage.setItem('user_role', 'doctor');
+
+    toast.success(`Welcome back, ${doctor.full_name}!`);
+
+    // Check if there's a return URL from session timeout
+    const returnUrl = localStorage.getItem('returnUrl');
+    if (returnUrl) {
+      localStorage.removeItem('returnUrl');
+      navigate(returnUrl);
+    } else {
+      navigate('/doctor/dashboard');
+    }
+  };
+
+  const handleTOTPSuccess = () => {
+    // TOTP verified successfully, complete login
+    if (totpUserRole === 'doctor' && pendingDoctorData) {
+      completeDoctorLogin(pendingDoctorData, totpUserId);
+    } else {
+      // Staff login completion would go here
+      toast.success('Login successful!');
+      navigate('/dashboard');
+    }
+    setShowTOTPVerify(false);
+  };
+
+  const handleTOTPCancel = async () => {
+    // User cancelled TOTP verification, sign them out
+    await supabase.auth.signOut();
+    setShowTOTPVerify(false);
+    setTotpUserId('');
+    setPendingDoctorData(null);
+    setDoctorError('Authentication cancelled');
+    toast.info('Authentication cancelled');
+  };
+
+  // If showing TOTP verification, render that instead
+  if (showTOTPVerify) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-xl">
+          <CardContent className="pt-6">
+            <TOTPVerify
+              userId={totpUserId}
+              onSuccess={handleTOTPSuccess}
+              onCancel={handleTOTPCancel}
+              deviceFingerprint={getDeviceFingerprint()}
+            />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4">

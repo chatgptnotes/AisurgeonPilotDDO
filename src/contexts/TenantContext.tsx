@@ -35,7 +35,7 @@ export interface TenantSettings {
 export interface TenantUser {
   id: string;
   tenant_id: string;
-  user_profile_id: string;
+  user_id: string;
   role: string;
   is_primary: boolean;
   created_at: string;
@@ -92,40 +92,36 @@ export const TenantProvider = ({ children }: TenantProviderProps) => {
     try {
       setIsLoadingTenant(true);
 
-      // Check if user is superadmin
+      // Check if user is superadmin by role
       const { data: userData, error: userError } = await supabase
-        .from('user_profiles')
-        .select('is_superadmin')
-        .eq('email', user!.email)
+        .from('users')
+        .select('role')
+        .eq('id', user!.id)
         .single();
 
-      if (!userError && userData?.is_superadmin) {
+      if (!userError && userData?.role === 'superadmin') {
         setIsSuperadmin(true);
         // Superadmin can see all tenants
         await loadAllTenants();
         return;
       }
 
-      // First get user_profile_id from email
-      const { data: profileData } = await supabase
-        .from('user_profiles')
-        .select('id')
-        .eq('email', user!.email)
-        .single();
+      // Use auth user ID directly for tenant lookups
+      const userId = user!.id;
 
-      if (!profileData) {
-        console.warn('User profile not found');
+      if (!userId) {
+        console.warn('User ID not found');
         setIsLoadingTenant(false);
         return;
       }
 
       // Load user's tenant memberships
-      const { data: memberships, error: membershipError } = await supabase
+      const { data: memberships, error: membershipError} = await supabase
         .from('tenant_users')
         .select(`
           id,
           tenant_id,
-          user_profile_id,
+          user_id,
           role,
           is_primary,
           created_at,
@@ -141,7 +137,7 @@ export const TenantProvider = ({ children }: TenantProviderProps) => {
             created_at
           )
         `)
-        .eq('user_profile_id', profileData.id);
+        .eq('user_id', userId);
 
       if (membershipError) {
         console.error('Error loading tenant memberships:', membershipError);
@@ -163,7 +159,7 @@ export const TenantProvider = ({ children }: TenantProviderProps) => {
       const tenantUsersList = memberships.map((m: any) => ({
         id: m.id,
         tenant_id: m.tenant_id,
-        user_profile_id: m.user_profile_id,
+        user_id: m.user_id,
         role: m.role,
         is_primary: m.is_primary,
         created_at: m.created_at

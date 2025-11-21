@@ -1,0 +1,83 @@
+name: Deploy to Development
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  deploy-dev:
+    name: Deploy to Vercel Development
+    runs-on: ubuntu-latest
+    environment:
+      name: development
+      url: ${{ steps.deploy.outputs.url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run type check
+        run: npm run typecheck
+
+      - name: Build application
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.DEV_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.DEV_SUPABASE_ANON_KEY }}
+          VITE_RESEND_API_KEY: ${{ secrets.DEV_RESEND_API_KEY }}
+          VITE_FROM_EMAIL: ${{ secrets.DEV_FROM_EMAIL }}
+          VITE_DOUBLETICK_API_KEY: ${{ secrets.DEV_DOUBLETICK_API_KEY }}
+          VITE_DOUBLETICK_PHONE_NUMBER: ${{ secrets.DEV_DOUBLETICK_PHONE_NUMBER }}
+
+      - name: Deploy to Vercel
+        id: deploy
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./
+          vercel-args: '--prod' # Deploy to production environment in Vercel
+
+      - name: Comment PR with deployment URL
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              body: `✅ Deployed to development: ${{ steps.deploy.outputs.url }}`
+            })
+
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests against ${{ steps.deploy.outputs.url }}"
+          # Add smoke test commands here
+          # Example: curl -f ${{ steps.deploy.outputs.url }}/health || exit 1
+
+      - name: Notify deployment success
+        run: |
+          echo "✅ Successfully deployed to development"
+          echo "URL: ${{ steps.deploy.outputs.url }}"
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Deployment to development failed"
+          # Add notification logic (Slack, email, etc.)
