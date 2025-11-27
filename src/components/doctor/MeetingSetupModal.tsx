@@ -89,7 +89,6 @@ export function MeetingSetupModal({ open, onClose, doctorName }: Props) {
         link = '';
     }
 
-    setGeneratedLink(link);
     setMeetingDetails(prev => ({ ...prev, meetingLink: link }));
     toast.success('Meeting link generated!');
   };
@@ -200,7 +199,6 @@ export function MeetingSetupModal({ open, onClose, doctorName }: Props) {
       description: '',
       agenda: '',
     });
-    setGeneratedLink('');
     setActiveTab('setup');
   };
 
@@ -306,10 +304,9 @@ export function MeetingSetupModal({ open, onClose, doctorName }: Props) {
               <div className="flex gap-2">
                 <Input
                   id="meetingLink"
-                  placeholder={meetingDetails.platform === 'custom' ? 'Paste your meeting link' : 'Click Generate to create link'}
+                  placeholder="Paste your meeting link or click Generate"
                   value={meetingDetails.meetingLink}
                   onChange={(e) => setMeetingDetails(prev => ({ ...prev, meetingLink: e.target.value }))}
-                  readOnly={meetingDetails.platform !== 'custom'}
                 />
                 {meetingDetails.platform !== 'custom' && (
                   <Button onClick={generateMeetingLink} variant="outline">
@@ -318,11 +315,9 @@ export function MeetingSetupModal({ open, onClose, doctorName }: Props) {
                   </Button>
                 )}
               </div>
-              {meetingDetails.platform === 'custom' && (
-                <p className="text-xs text-gray-500">
-                  Paste your own meeting link from any video conferencing platform
-                </p>
-              )}
+              <p className="text-xs text-gray-500">
+                Paste your own meeting link or use Generate to create a sample link
+              </p>
             </div>
 
             {/* Zoom specific fields */}
