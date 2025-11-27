@@ -12,8 +12,7 @@ import { PatientDetailsModal } from './PatientDetailsModal';
 
 interface Patient {
   id: string;
-  first_name: string;
-  last_name: string;
+  name: string;
   email: string | null;
   phone: string | null;
   date_of_birth?: string;
@@ -64,9 +63,9 @@ export function PatientListModal({ open, onClose, doctorId }: Props) {
       const query = searchQuery.toLowerCase();
       const filtered = patients.filter(
         (patient) => {
-          const fullName = `${patient.first_name || ''} ${patient.last_name || ''}`.trim() || 'Unknown';
+          const patientName = patient.name || 'Unknown';
           return (
-            fullName.toLowerCase().includes(query) ||
+            patientName.toLowerCase().includes(query) ||
             (patient.phone && patient.phone.includes(query)) ||
             (patient.email && patient.email.toLowerCase().includes(query))
           );
@@ -79,51 +78,78 @@ export function PatientListModal({ open, onClose, doctorId }: Props) {
   const fetchPatients = async () => {
     setLoading(true);
     try {
-      // Get all appointments with patient data for this doctor
+      // Step 1: Fetch appointments with patient_id only (avoid broken join)
       const { data: appointments, error: appointmentsError } = await supabase
         .from('appointments')
-        .select(`
-          id,
-          patient_id,
-          start_at,
-          status,
-          appointment_type,
-          mode,
-          patients!patient_id (
-            id,
-            first_name,
-            last_name,
-            email,
-            phone,
-            date_of_birth,
-            created_at,
-            gender,
-            address,
-            blood_group,
-            allergies
-          )
-        `)
+        .select('id, patient_id, start_at, status, appointment_type, mode')
         .eq('doctor_id', doctorId)
         .order('start_at', { ascending: true });
 
-      console.log('[PatientList] Appointments fetched:', appointments?.length, 'Error:', appointmentsError);
-
       if (appointmentsError) throw appointmentsError;
 
-      // Group appointments by patient and find next appointment
-      const patientMap = new Map<string, PatientWithAppointment>();
-      const now = new Date();
+      // Step 2: Get unique patient_ids
+      const uniquePatientIds = [...new Set(
+        (appointments || [])
+          .map((apt: any) => apt.patient_id)
+          .filter(Boolean)
+      )];
 
-      appointments?.forEach((apt) => {
-        const patient = apt.patients as any;
-        if (!patient) return;
+      console.log('[PatientList] Unique patient IDs:', uniquePatientIds.length);
 
-        const existingPatient = patientMap.get(patient.id);
+      if (uniquePatientIds.length === 0) {
+        setPatients([]);
+        setFilteredPatients([]);
+        setLoading(false);
+        return;
+      }
+
+      // Step 3: Fetch patient details separately
+      const { data: patientsData, error: patientsError } = await supabase
+        .from('patients')
+        .select('id, name, email, phone, date_of_birth, created_at, gender, address, blood_group, allergies')
+        .in('id', uniquePatientIds);
+
+      if (patientsError) throw patientsError;
+
+      console.log('[PatientList] Patients fetched:', patientsData?.length);
+
+      // Step 4: Create patient map for quick lookup
+      const patientLookup = new Map<string, Patient>();
+      (patientsData || []).forEach((p: any) => patientLookup.set(p.id, p));
+
+      // Step 5: Build patients with appointment info
+      const patientWithAppointments = new Map<string, PatientWithAppointment>();
+
+      appointments?.forEach((apt: any) => {
+        const patient = patientLookup.get(apt.patient_id);
         const appointmentDate = parseISO(apt.start_at);
         const isUpcoming = isFuture(appointmentDate) && ['scheduled', 'confirmed'].includes(apt.status);
 
-        if (!existingPatient) {
-          patientMap.set(patient.id, {
+        // Handle orphaned patient_ids (patient record doesn't exist)
+        if (!patient) {
+          const placeholderId = apt.patient_id;
+          if (!patientWithAppointments.has(placeholderId)) {
+            patientWithAppointments.set(placeholderId, {
+              id: placeholderId,
+              name: `Patient #${placeholderId.slice(0, 8)}`,
+              email: null,
+              phone: null,
+              created_at: apt.start_at,
+              nextAppointment: isUpcoming ? {
+                id: apt.id,
+                start_at: apt.start_at,
+                status: apt.status,
+                appointment_type: apt.appointment_type,
+                mode: apt.mode,
+              } : undefined,
+            });
+          }
+          return;
+        }
+
+        const existing = patientWithAppointments.get(patient.id);
+        if (!existing) {
+          patientWithAppointments.set(patient.id, {
             ...patient,
             nextAppointment: isUpcoming ? {
               id: apt.id,
@@ -133,8 +159,8 @@ export function PatientListModal({ open, onClose, doctorId }: Props) {
               mode: apt.mode,
             } : undefined,
           });
-        } else if (isUpcoming && !existingPatient.nextAppointment) {
-          existingPatient.nextAppointment = {
+        } else if (isUpcoming && !existing.nextAppointment) {
+          existing.nextAppointment = {
             id: apt.id,
             start_at: apt.start_at,
             status: apt.status,
@@ -144,9 +170,11 @@ export function PatientListModal({ open, onClose, doctorId }: Props) {
         }
       });
 
-      const patientsArray = Array.from(patientMap.values()).sort((a, b) =>
+      const patientsArray = Array.from(patientWithAppointments.values()).sort((a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
+
+      console.log('[PatientList] Final patients array:', patientsArray.length);
 
       setPatients(patientsArray);
       setFilteredPatients(patientsArray);
@@ -215,9 +243,7 @@ export function PatientListModal({ open, onClose, doctorId }: Props) {
                         </div>
                         <div>
                           <h3 className="font-semibold text-lg">
-                            {patient.first_name || patient.last_name
-                              ? `${patient.first_name || ''} ${patient.last_name || ''}`.trim()
-                              : 'Unknown Patient'}
+                            {patient.name || 'Unknown Patient'}
                           </h3>
                           <Badge variant="outline" className="text-xs">
                             Patient since {format(new Date(patient.created_at), 'MMM yyyy')}

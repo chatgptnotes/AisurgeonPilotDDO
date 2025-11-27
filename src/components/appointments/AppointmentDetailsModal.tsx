@@ -32,8 +32,7 @@ import { ConsultationWorkspace } from '@/components/consultation/ConsultationWor
 
 interface Patient {
   id: string;
-  first_name: string;
-  last_name: string;
+  name: string;
   email: string;
   phone: string;
   date_of_birth?: string;
@@ -76,7 +75,7 @@ export function AppointmentDetailsModal({ appointment, open, onClose, onUpdate }
   if (!appointment) return null;
 
   const patientData = appointment.patient || appointment.patients;
-  const patientName = patientData ? `${patientData.first_name} ${patientData.last_name}` : 'Unknown Patient';
+  const patientName = patientData?.name || 'Unknown Patient';
 
   const handleConfirm = async () => {
     setLoading(true);

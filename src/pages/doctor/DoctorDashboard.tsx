@@ -39,8 +39,7 @@ import NotificationBell from '@/components/notifications/NotificationBell';
 
 interface Patient {
   id: string;
-  first_name: string;
-  last_name: string;
+  name: string;
   email: string;
   phone: string;
   date_of_birth?: string;
@@ -144,8 +143,7 @@ const DoctorDashboard: React.FC = () => {
           *,
           patients!patient_id (
             id,
-            first_name,
-            last_name,
+            name,
             email,
             phone,
             date_of_birth
@@ -351,8 +349,7 @@ const DoctorDashboard: React.FC = () => {
           *,
           patients!patient_id (
             id,
-            first_name,
-            last_name,
+            name,
             email,
             phone,
             date_of_birth
@@ -454,8 +451,7 @@ const DoctorDashboard: React.FC = () => {
           *,
           patients!patient_id (
             id,
-            first_name,
-            last_name,
+            name,
             email,
             phone,
             date_of_birth
@@ -548,7 +544,7 @@ const DoctorDashboard: React.FC = () => {
             // Fetch patient data for the new appointment
             const { data: patientData } = await supabase
               .from('patients')
-              .select('id, first_name, last_name, phone')
+              .select('id, name, phone')
               .eq('id', newAppointment.patient_id)
               .single();
 
@@ -997,14 +993,12 @@ const DoctorDashboard: React.FC = () => {
                         <div className="flex items-center space-x-4">
                           <Avatar className="h-12 w-12">
                             <AvatarFallback>
-                              {appointment.patient?.first_name?.[0]}
-                              {appointment.patient?.last_name?.[0]}
+                              {appointment.patient?.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || '?'}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1">
                             <div className="font-semibold">
-                              {appointment.patient?.first_name}{' '}
-                              {appointment.patient?.last_name}
+                              {appointment.patient?.name || 'Unknown Patient'}
                             </div>
                             <div className="flex items-center text-sm text-gray-600 mt-1">
                               <Clock className="h-3 w-3 mr-1" />

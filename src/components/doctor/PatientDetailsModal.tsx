@@ -39,9 +39,7 @@ import {
 
 interface Patient {
   id: string;
-  first_name?: string;
-  last_name?: string;
-  name?: string; // For backwards compatibility
+  name: string;
   email: string | null;
   phone: string | null;
   date_of_birth?: string;
@@ -90,15 +88,7 @@ export function PatientDetailsModal({ open, onClose, patient, doctorId, onPatien
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
   const [isLabReportModalOpen, setIsLabReportModalOpen] = useState(false);
 
-  // Helper to get patient's full name
-  const getPatientName = () => {
-    if (patient.first_name || patient.last_name) {
-      return `${patient.first_name || ''} ${patient.last_name || ''}`.trim();
-    }
-    return patient.name || 'Unknown Patient';
-  };
-
-  const patientName = getPatientName();
+  const patientName = patient.name || 'Unknown Patient';
 
   useEffect(() => {
     if (open && patient?.id) {

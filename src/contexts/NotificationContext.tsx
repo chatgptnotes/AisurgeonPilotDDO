@@ -83,10 +83,10 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
           addNotification({
             type: 'patient_registered',
             title: 'New Patient Registered',
-            message: `${newPatient.first_name || newPatient.name || 'A patient'} ${newPatient.last_name || ''} has registered.`.trim(),
+            message: `${newPatient.name || 'A patient'} has registered.`,
             data: {
               patientId: newPatient.id,
-              patientName: `${newPatient.first_name || newPatient.name || ''} ${newPatient.last_name || ''}`.trim(),
+              patientName: newPatient.name || 'Unknown Patient',
               email: newPatient.email,
               phone: newPatient.phone || newPatient.phone_number,
             },
@@ -114,12 +114,12 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
           if (newAppointment.patient_id) {
             const { data: patient } = await supabase
               .from('patients')
-              .select('first_name, last_name, name')
+              .select('name')
               .eq('id', newAppointment.patient_id)
               .single();
 
             if (patient) {
-              patientName = `${patient.first_name || patient.name || ''} ${patient.last_name || ''}`.trim();
+              patientName = patient.name || 'Unknown Patient';
             }
           }
 

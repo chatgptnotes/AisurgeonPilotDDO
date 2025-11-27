@@ -220,28 +220,18 @@ const PatientSignupEnhanced: React.FC = () => {
       }
 
       // 2. Create patient profile
-      // Default tenant for AI Surgeon Pilot platform
-      const defaultTenantId = '00000000-0000-0000-0000-000000000001';
-
       const { data: patient, error: patientError } = await supabase
         .from('patients')
         .insert({
           id: authData.user.id, // Link to auth user
-          tenant_id: defaultTenantId, // Required for multi-tenant setup
           patients_id: patientId, // Display ID
           email: formData.email.toLowerCase(),
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          name: `${formData.first_name} ${formData.last_name}`, // Full name for compatibility
+          name: `${formData.first_name} ${formData.last_name}`, // Full name
           phone: formData.phone,
           date_of_birth: formData.date_of_birth,
           age: formData.age,
           gender: formData.gender,
-          weight_kg: parseFloat(formData.weight_kg),
-          height_cm: parseFloat(formData.height_cm),
           blood_group: formData.blood_group || null,
-          email_verified: false,
-          created_at: new Date().toISOString()
         })
         .select()
         .single();

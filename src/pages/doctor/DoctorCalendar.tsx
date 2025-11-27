@@ -19,14 +19,12 @@ interface Appointment {
   symptoms?: string;
   reason?: string;
   patient?: {
-    first_name: string;
-    last_name: string;
+    name: string;
     email: string;
     phone: string;
   };
   patients?: {
-    first_name: string;
-    last_name: string;
+    name: string;
     email: string;
     phone: string;
   };
@@ -138,8 +136,7 @@ export default function DoctorCalendar() {
           appointment_type,
           patients (
             id,
-            first_name,
-            last_name,
+            name,
             email,
             phone,
             date_of_birth
@@ -322,9 +319,7 @@ export default function DoctorCalendar() {
                               <div className="space-y-1">
                                 {dayAppointments.slice(0, 3).map(apt => {
                                   const patientData = apt.patient || apt.patients;
-                                  const patientName = patientData
-                                    ? `${patientData.first_name} ${patientData.last_name}`
-                                    : 'Unknown Patient';
+                                  const patientName = patientData?.name || 'Unknown Patient';
                                   const timeStr = new Date(apt.start_at).toLocaleTimeString('en-US', {
                                     hour: 'numeric',
                                     minute: '2-digit',
@@ -374,9 +369,7 @@ export default function DoctorCalendar() {
                 <div className="space-y-4">
                   {appointments.slice(0, 10).map(apt => {
                     const patientData = apt.patient || apt.patients;
-                    const patientName = patientData
-                      ? `${patientData.first_name} ${patientData.last_name}`
-                      : 'Unknown Patient';
+                    const patientName = patientData?.name || 'Unknown Patient';
 
                     return (
                       <div

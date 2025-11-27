@@ -89,8 +89,7 @@ export function QuickBookingModal({ doctorId, open, onClose, onSuccess }: Props)
       const { data, error } = await supabase
         .from('patients')
         .insert({
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
+          name: `${firstName.trim()} ${lastName.trim()}`.trim(),
           phone: phone.trim(),
           email: email.trim() || null,
           date_of_birth: dateOfBirth || null,
@@ -354,7 +353,7 @@ export function QuickBookingModal({ doctorId, open, onClose, onSuccess }: Props)
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold text-green-900">
-                    {selectedPatient.first_name} {selectedPatient.last_name}
+                    {selectedPatient.name}
                   </h3>
                   <p className="text-sm text-green-700">{selectedPatient.phone}</p>
                   {selectedPatient.email && (
