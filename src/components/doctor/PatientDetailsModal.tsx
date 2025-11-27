@@ -39,7 +39,9 @@ import {
 
 interface Patient {
   id: string;
-  name: string;
+  first_name?: string;
+  last_name?: string;
+  name?: string; // For backwards compatibility
   email: string | null;
   phone: string | null;
   date_of_birth?: string;
@@ -87,6 +89,16 @@ export function PatientDetailsModal({ open, onClose, patient, doctorId, onPatien
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
   const [isLabReportModalOpen, setIsLabReportModalOpen] = useState(false);
+
+  // Helper to get patient's full name
+  const getPatientName = () => {
+    if (patient.first_name || patient.last_name) {
+      return `${patient.first_name || ''} ${patient.last_name || ''}`.trim();
+    }
+    return patient.name || 'Unknown Patient';
+  };
+
+  const patientName = getPatientName();
 
   useEffect(() => {
     if (open && patient?.id) {
@@ -174,13 +186,11 @@ export function PatientDetailsModal({ open, onClose, patient, doctorId, onPatien
 
   const handleSendWhatsApp = () => {
     const phone = patient.phone?.replace(/[^0-9]/g, '') || '';
-    const patientName = patient.name || 'Patient';
     const message = encodeURIComponent(`Hello ${patientName}, this is a message from your doctor.`);
     window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
   };
 
   const handleSendEmail = () => {
-    const patientName = patient.name || 'Patient';
     const subject = encodeURIComponent(`Medical Consultation - Dr. Office`);
     const body = encodeURIComponent(`Dear ${patientName},\n\nThank you for your visit.\n\nBest regards`);
     window.location.href = `mailto:${patient.email}?subject=${subject}&body=${body}`;
@@ -209,7 +219,7 @@ export function PatientDetailsModal({ open, onClose, patient, doctorId, onPatien
             </div>
             <div>
               <h2 className="text-xl font-bold">
-                {patient.name || 'Unknown Patient'}
+                {patientName}
               </h2>
               <p className="text-sm text-gray-500 font-normal">
                 Patient since {format(new Date(patient.created_at), 'MMMM yyyy')}
@@ -554,7 +564,7 @@ export function PatientDetailsModal({ open, onClose, patient, doctorId, onPatien
       open={isUploadModalOpen}
       onClose={() => setIsUploadModalOpen(false)}
       patientId={patient.id}
-      patientName={patient.name || 'Patient'}
+      patientName={patientName}
       doctorId={doctorId}
       onUploadComplete={onPatientUpdated}
     />
@@ -564,7 +574,7 @@ export function PatientDetailsModal({ open, onClose, patient, doctorId, onPatien
       open={isPrescriptionModalOpen}
       onClose={() => setIsPrescriptionModalOpen(false)}
       patientId={patient.id}
-      patientName={patient.name || 'Patient'}
+      patientName={patientName}
       doctorId={doctorId}
       onPrescriptionSaved={onPatientUpdated}
     />
@@ -574,7 +584,7 @@ export function PatientDetailsModal({ open, onClose, patient, doctorId, onPatien
       open={isLabReportModalOpen}
       onClose={() => setIsLabReportModalOpen(false)}
       patientId={patient.id}
-      patientName={patient.name || 'Patient'}
+      patientName={patientName}
       doctorId={doctorId}
       onReportSaved={onPatientUpdated}
     />

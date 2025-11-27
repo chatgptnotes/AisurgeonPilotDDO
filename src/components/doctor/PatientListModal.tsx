@@ -12,7 +12,8 @@ import { PatientDetailsModal } from './PatientDetailsModal';
 
 interface Patient {
   id: string;
-  name: string;
+  first_name: string;
+  last_name: string;
   email: string | null;
   phone: string | null;
   date_of_birth?: string;
@@ -63,9 +64,9 @@ export function PatientListModal({ open, onClose, doctorId }: Props) {
       const query = searchQuery.toLowerCase();
       const filtered = patients.filter(
         (patient) => {
-          const patientName = patient.name || 'Unknown';
+          const fullName = `${patient.first_name || ''} ${patient.last_name || ''}`.trim() || 'Unknown';
           return (
-            patientName.toLowerCase().includes(query) ||
+            fullName.toLowerCase().includes(query) ||
             (patient.phone && patient.phone.includes(query)) ||
             (patient.email && patient.email.toLowerCase().includes(query))
           );
@@ -90,7 +91,8 @@ export function PatientListModal({ open, onClose, doctorId }: Props) {
           mode,
           patients!patient_id (
             id,
-            name,
+            first_name,
+            last_name,
             email,
             phone,
             date_of_birth,
@@ -103,6 +105,8 @@ export function PatientListModal({ open, onClose, doctorId }: Props) {
         `)
         .eq('doctor_id', doctorId)
         .order('start_at', { ascending: true });
+
+      console.log('[PatientList] Appointments fetched:', appointments?.length, 'Error:', appointmentsError);
 
       if (appointmentsError) throw appointmentsError;
 
@@ -211,7 +215,9 @@ export function PatientListModal({ open, onClose, doctorId }: Props) {
                         </div>
                         <div>
                           <h3 className="font-semibold text-lg">
-                            {patient.name || 'Unknown Patient'}
+                            {patient.first_name || patient.last_name
+                              ? `${patient.first_name || ''} ${patient.last_name || ''}`.trim()
+                              : 'Unknown Patient'}
                           </h3>
                           <Badge variant="outline" className="text-xs">
                             Patient since {format(new Date(patient.created_at), 'MMM yyyy')}
