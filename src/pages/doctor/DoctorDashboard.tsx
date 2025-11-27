@@ -33,6 +33,7 @@ import { AppointmentDetailsModal } from '@/components/appointments/AppointmentDe
 import { QuickBookingModal } from '@/components/appointments/QuickBookingModal';
 import { AppointmentListModal } from '@/components/appointments/AppointmentListModal';
 import { PatientListModal } from '@/components/doctor/PatientListModal';
+import { MeetingSetupModal } from '@/components/doctor/MeetingSetupModal';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { DoctorSidebar } from '@/components/doctor/DoctorSidebar';
 import NotificationBell from '@/components/notifications/NotificationBell';
@@ -118,6 +119,9 @@ const DoctorDashboard: React.FC = () => {
   // Store all week appointments for modals
   const [weekAppointments, setWeekAppointments] = useState<Appointment[]>([]);
   const [dayAppointments, setDayAppointments] = useState<Appointment[]>([]);
+
+  // Meeting modal state
+  const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
 
   const handleAppointmentClick = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
@@ -798,7 +802,7 @@ const DoctorDashboard: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <Button
                 variant="outline"
                 className="justify-start relative"
@@ -825,6 +829,15 @@ const DoctorDashboard: React.FC = () => {
                 <Video className="h-4 w-4 mr-2" />
                 Patient Education
                 <Badge className="ml-auto bg-green-500 text-white text-xs">NEW</Badge>
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start relative"
+                onClick={() => setIsMeetingModalOpen(true)}
+              >
+                <Video className="h-4 w-4 mr-2" />
+                Meeting
+                <Badge className="ml-auto bg-blue-500 text-white text-xs">NEW</Badge>
               </Button>
             </div>
           </CardContent>
@@ -1156,6 +1169,13 @@ const DoctorDashboard: React.FC = () => {
         title={selectedDayDate ? `Appointments for ${format(selectedDayDate, 'EEEE, MMMM d')}` : 'Appointments'}
         appointments={dayAppointments}
         onAppointmentClick={handleAppointmentClick}
+      />
+
+      {/* Meeting Setup Modal */}
+      <MeetingSetupModal
+        open={isMeetingModalOpen}
+        onClose={() => setIsMeetingModalOpen(false)}
+        doctorName={doctorProfile?.full_name}
       />
     </SidebarProvider>
   );
