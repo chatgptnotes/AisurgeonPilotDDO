@@ -167,6 +167,90 @@ export const DoctorSidebar: React.FC<DoctorSidebarProps> = ({
 
         <SidebarSeparator />
 
+        {/* Digital Doctor Office (DDO) */}
+        <SidebarGroup>
+          <SidebarGroupLabel
+            className="cursor-pointer flex items-center justify-between"
+            onClick={() => setDdoExpanded(!ddoExpanded)}
+          >
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              <span>Digital Doctor Office</span>
+            </div>
+            {ddoExpanded ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </SidebarGroupLabel>
+
+          {ddoExpanded && (
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => navigate('/doctors')}
+                    isActive={isActive('/doctors')}
+                    className="w-full"
+                  >
+                    <Users className="h-4 w-4" />
+                    <span>Doctor Directory</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => navigate('/whatsapp-service-test')}
+                    isActive={isActive('/whatsapp-service-test')}
+                    className="w-full"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    <span>WhatsApp Manager</span>
+                    <Badge className="ml-auto bg-green-500 text-white text-xs">NEW</Badge>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => navigate('/patient-followup')}
+                    isActive={isActive('/patient-followup')}
+                    className="w-full"
+                  >
+                    <Users className="h-4 w-4" />
+                    <span>Patient Follow-up</span>
+                    <Badge className="ml-auto bg-green-500 text-white text-xs">NEW</Badge>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => navigate('/patient-education')}
+                    isActive={isActive('/patient-education')}
+                    className="w-full"
+                  >
+                    <Video className="h-4 w-4" />
+                    <span>Patient Education</span>
+                    <Badge className="ml-auto bg-green-500 text-white text-xs">NEW</Badge>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => navigate('/surgery-options')}
+                    isActive={isActive('/surgery-options')}
+                    className="w-full"
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span>Surgery Options</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          )}
+        </SidebarGroup>
+
+        <SidebarSeparator />
+
         {/* Hospital Management */}
         <SidebarGroup>
           <SidebarGroupLabel
@@ -316,90 +400,6 @@ export const DoctorSidebar: React.FC<DoctorSidebarProps> = ({
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>
                 </SidebarMenuSub>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          )}
-        </SidebarGroup>
-
-        <SidebarSeparator />
-
-        {/* Digital Doctor Office (DDO) */}
-        <SidebarGroup>
-          <SidebarGroupLabel
-            className="cursor-pointer flex items-center justify-between"
-            onClick={() => setDdoExpanded(!ddoExpanded)}
-          >
-            <div className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
-              <span>Digital Doctor Office</span>
-            </div>
-            {ddoExpanded ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
-          </SidebarGroupLabel>
-
-          {ddoExpanded && (
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => navigate('/doctors')}
-                    isActive={isActive('/doctors')}
-                    className="w-full"
-                  >
-                    <Users className="h-4 w-4" />
-                    <span>Doctor Directory</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => navigate('/whatsapp-service-test')}
-                    isActive={isActive('/whatsapp-service-test')}
-                    className="w-full"
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                    <span>WhatsApp Manager</span>
-                    <Badge className="ml-auto bg-green-500 text-white text-xs">NEW</Badge>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => navigate('/patient-followup')}
-                    isActive={isActive('/patient-followup')}
-                    className="w-full"
-                  >
-                    <Users className="h-4 w-4" />
-                    <span>Patient Follow-up</span>
-                    <Badge className="ml-auto bg-green-500 text-white text-xs">NEW</Badge>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => navigate('/patient-education')}
-                    isActive={isActive('/patient-education')}
-                    className="w-full"
-                  >
-                    <Video className="h-4 w-4" />
-                    <span>Patient Education</span>
-                    <Badge className="ml-auto bg-green-500 text-white text-xs">NEW</Badge>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => navigate('/surgery-options')}
-                    isActive={isActive('/surgery-options')}
-                    className="w-full"
-                  >
-                    <Settings className="h-4 w-4" />
-                    <span>Surgery Options</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           )}

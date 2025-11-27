@@ -20,13 +20,14 @@ import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 interface Prescription {
   id: string;
   visit_id: string;
-  visit_date: string;
+  prescription_date: string;
   doctor_name?: string;
+  diagnosis?: string;
+  notes?: string;
   medications: Medication[];
 }
 
 interface Medication {
-  id: string;
   name: string;
   dosage?: string;
   frequency?: string;
@@ -58,33 +59,25 @@ const PatientPrescriptions: React.FC = () => {
         return;
       }
 
+      console.log('[Prescriptions] Loading for patient:', patientId);
+
       let query = supabase
-        .from('visits')
-        .select(`
-          id,
-          visit_date,
-          doctor_name,
-          visit_medications (
-            id,
-            medication_id,
-            medications (
-              id,
-              name,
-              description
-            )
-          )
-        `)
+        .from('prescriptions')
+        .select('*')
         .eq('patient_id', patientId)
-        .order('visit_date', { ascending: false });
+        .eq('is_published', true)
+        .order('prescription_date', { ascending: false });
 
       // Apply date filter
       if (dateFilter !== 'all') {
         const months = dateFilter === '1m' ? 1 : dateFilter === '3m' ? 3 : 6;
         const startDate = subMonths(new Date(), months);
-        query = query.gte('visit_date', startDate.toISOString());
+        query = query.gte('prescription_date', startDate.toISOString());
       }
 
       const { data, error } = await query;
+
+      console.log('[Prescriptions] Query result:', { data, error });
 
       if (error) {
         console.error('Error loading prescriptions:', error);
@@ -93,22 +86,15 @@ const PatientPrescriptions: React.FC = () => {
       }
 
       // Transform data into prescription format
-      const formattedPrescriptions: Prescription[] = (data || [])
-        .filter((visit: any) => visit.visit_medications && visit.visit_medications.length > 0)
-        .map((visit: any) => ({
-          id: visit.id,
-          visit_id: visit.id,
-          visit_date: visit.visit_date,
-          doctor_name: visit.doctor_name,
-          medications: visit.visit_medications.map((vm: any) => ({
-            id: vm.medications?.id || vm.id,
-            name: vm.medications?.name || 'Unknown Medication',
-            dosage: vm.medications?.description || '',
-            frequency: '',
-            duration: '',
-            instructions: ''
-          }))
-        }));
+      const formattedPrescriptions: Prescription[] = (data || []).map((prescription: any) => ({
+        id: prescription.id,
+        visit_id: prescription.visit_id,
+        prescription_date: prescription.prescription_date,
+        doctor_name: prescription.doctor_name,
+        diagnosis: prescription.diagnosis,
+        notes: prescription.notes,
+        medications: prescription.medications || []
+      }));
 
       setPrescriptions(formattedPrescriptions);
 
@@ -215,7 +201,7 @@ const PatientPrescriptions: React.FC = () => {
                   <p className="text-sm text-gray-600">Last Prescription</p>
                   <p className="text-lg font-bold text-purple-600">
                     {prescriptions.length > 0
-                      ? format(new Date(prescriptions[0].visit_date), 'MMM d')
+                      ? format(new Date(prescriptions[0].prescription_date), 'MMM d')
                       : 'None'}
                   </p>
                 </div>
@@ -305,11 +291,16 @@ const PatientPrescriptions: React.FC = () => {
                       </CardTitle>
                       <CardDescription className="flex items-center gap-2 mt-1">
                         <Calendar className="h-3 w-3" />
-                        {format(new Date(prescription.visit_date), 'EEEE, MMMM d, yyyy')}
+                        {format(new Date(prescription.prescription_date), 'EEEE, MMMM d, yyyy')}
                       </CardDescription>
                       {prescription.doctor_name && (
                         <p className="text-sm text-gray-600 mt-1">
                           Dr. {prescription.doctor_name}
+                        </p>
+                      )}
+                      {prescription.diagnosis && (
+                        <p className="text-sm text-blue-600 mt-1">
+                          <span className="font-medium">Diagnosis:</span> {prescription.diagnosis}
                         </p>
                       )}
                     </div>
@@ -331,7 +322,7 @@ const PatientPrescriptions: React.FC = () => {
                     <div className="space-y-3">
                       {prescription.medications.map((medication, index) => (
                         <div
-                          key={medication.id}
+                          key={`${prescription.id}-med-${index}`}
                           className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg border"
                         >
                           <div className="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -345,28 +336,30 @@ const PatientPrescriptions: React.FC = () => {
                                 </p>
                                 {medication.dosage && (
                                   <p className="text-sm text-gray-600 mt-1">
-                                    {medication.dosage}
+                                    Dosage: {medication.dosage}
                                   </p>
                                 )}
                               </div>
                             </div>
-                            {medication.frequency && (
+                            {(medication.frequency || medication.duration) && (
                               <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                                <div>
-                                  <span className="text-gray-500">Frequency:</span>
-                                  <span className="ml-2 font-medium">{medication.frequency}</span>
-                                </div>
+                                {medication.frequency && (
+                                  <div>
+                                    <span className="text-gray-500">Frequency:</span>
+                                    <span className="ml-2 font-medium">{medication.frequency.replace(/_/g, ' ')}</span>
+                                  </div>
+                                )}
                                 {medication.duration && (
                                   <div>
                                     <span className="text-gray-500">Duration:</span>
-                                    <span className="ml-2 font-medium">{medication.duration}</span>
+                                    <span className="ml-2 font-medium">{medication.duration.replace(/_/g, ' ')}</span>
                                   </div>
                                 )}
                               </div>
                             )}
                             {medication.instructions && (
                               <p className="text-xs text-gray-600 mt-2 italic">
-                                {medication.instructions}
+                                Instructions: {medication.instructions}
                               </p>
                             )}
                           </div>
@@ -375,18 +368,16 @@ const PatientPrescriptions: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-4 border-t flex items-center justify-between">
+                  <div className="mt-4 pt-4 border-t">
+                    {prescription.notes && (
+                      <p className="text-sm text-gray-600 mb-3 italic">
+                        <span className="font-medium not-italic">Notes:</span> {prescription.notes}
+                      </p>
+                    )}
                     <p className="text-xs text-gray-500 flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      Prescribed on {format(new Date(prescription.visit_date), 'MMM d, yyyy')}
+                      Prescribed on {format(new Date(prescription.prescription_date), 'MMM d, yyyy')}
                     </p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => navigate(`/patient/medical-records?visit=${prescription.id}`)}
-                    >
-                      View Visit Details
-                    </Button>
                   </div>
                 </CardContent>
               </Card>

@@ -12,6 +12,7 @@ import { useCounts } from "@/hooks/useCounts";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { TenantProvider } from "@/contexts/TenantContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 import Login from "@/components/Login";
 import LandingPage from "@/components/LandingPage";
 import HospitalSelection from "@/components/HospitalSelection";
@@ -278,18 +279,20 @@ const App = () => (
       <TooltipProvider>
         <AuthProvider>
           <TenantProvider>
-            <Suspense fallback={
-              <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading application...</p>
+            <NotificationProvider>
+              <Suspense fallback={
+                <div className="min-h-screen flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading application...</p>
+                  </div>
                 </div>
-              </div>
-            }>
-              <Toaster />
-              <Sonner />
-              <AppContent />
-            </Suspense>
+              }>
+                <Toaster />
+                <Sonner />
+                <AppContent />
+              </Suspense>
+            </NotificationProvider>
           </TenantProvider>
         </AuthProvider>
       </TooltipProvider>

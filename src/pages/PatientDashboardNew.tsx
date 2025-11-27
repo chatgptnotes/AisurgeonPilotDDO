@@ -20,7 +20,11 @@ import {
   Stethoscope,
   Tag,
   ArrowRight,
-  Settings
+  Settings,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  PlayCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -33,6 +37,31 @@ const PatientDashboardNew: React.FC = () => {
   const [visits, setVisits] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Helper function to get status badge styling
+  const getStatusBadge = (status: string, startAt: string) => {
+    const isUpcoming = new Date(startAt) > new Date();
+
+    switch(status) {
+      case 'completed':
+        return { label: 'Completed', color: 'bg-green-100 text-green-800', Icon: CheckCircle };
+      case 'cancelled':
+        return { label: 'Cancelled', color: 'bg-red-100 text-red-800', Icon: XCircle };
+      case 'no_show':
+        return { label: 'No Show', color: 'bg-gray-100 text-gray-800', Icon: AlertCircle };
+      case 'in_progress':
+        return { label: 'In Progress', color: 'bg-purple-100 text-purple-800', Icon: PlayCircle };
+      case 'confirmed':
+      case 'scheduled':
+        return isUpcoming
+          ? { label: 'Upcoming', color: 'bg-blue-100 text-blue-800', Icon: Clock }
+          : { label: 'Missed', color: 'bg-orange-100 text-orange-800', Icon: AlertCircle };
+      case 'pending_payment':
+        return { label: 'Pending Payment', color: 'bg-yellow-100 text-yellow-800', Icon: Clock };
+      default:
+        return { label: status, color: 'bg-gray-100 text-gray-800', Icon: Clock };
+    }
+  };
 
   useEffect(() => {
     checkAuthAndLoadData();
@@ -84,9 +113,9 @@ const PatientDashboardNew: React.FC = () => {
               const exists = prev.some(apt => apt.id === newAppointment.id);
               if (exists) return prev;
 
-              // Add and sort by start time
+              // Add and sort by start time (most recent first)
               return [newAppointment, ...prev].sort((a, b) =>
-                new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
+                new Date(b.start_at).getTime() - new Date(a.start_at).getTime()
               );
             });
 
@@ -229,8 +258,8 @@ const PatientDashboardNew: React.FC = () => {
 
       setVisits(visitsData || []);
 
-      // Load patient's upcoming appointments
-      console.log('[Dashboard] Fetching appointments for patient:', patientId);
+      // Load ALL patient appointments (upcoming, completed, cancelled, etc.)
+      console.log('[Dashboard] Fetching all appointments for patient:', patientId);
       const { data: appointmentsData, error: appointmentsError } = await supabase
         .from('appointments')
         .select(`
@@ -245,10 +274,9 @@ const PatientDashboardNew: React.FC = () => {
           )
         `)
         .eq('patient_id', patientId)
-        .in('status', ['pending_payment', 'confirmed'])
-        .gte('start_at', new Date().toISOString())
-        .order('start_at', { ascending: true })
-        .limit(5);
+        .in('status', ['pending_payment', 'confirmed', 'scheduled', 'in_progress', 'completed', 'cancelled', 'no_show'])
+        .order('start_at', { ascending: false })
+        .limit(15);
 
       console.log('[Dashboard] Appointments query result:', {
         count: appointmentsData?.length || 0,
@@ -482,66 +510,79 @@ const PatientDashboardNew: React.FC = () => {
           </div>
         </div>
 
-        {/* Upcoming Appointments */}
-        <Card className="mb-6">
+        {/* My Appointments - All appointments with status badges */}
+        <Card className="mb-6" data-section="appointments">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Upcoming Appointments
+              <Calendar className="h-5 w-5" />
+              My Appointments
             </CardTitle>
-            <CardDescription>Your scheduled consultations</CardDescription>
+            <CardDescription>All your appointments (upcoming, completed, cancelled)</CardDescription>
           </CardHeader>
           <CardContent>
             {appointments.length === 0 ? (
               <div className="text-center py-8">
-                <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 mb-4">No upcoming appointments</p>
+                <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 mb-4">No appointments yet</p>
                 <Button onClick={() => navigate('/doctors')}>
                   Book an Appointment
                 </Button>
               </div>
             ) : (
               <div className="space-y-4">
-                {appointments.map((appointment) => (
-                  <div
-                    key={appointment.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                  >
-                    <div className="flex items-center gap-4">
-                      <img
-                        src={appointment.doctors?.profile_photo_url || 'https://via.placeholder.com/48'}
-                        alt={appointment.doctors?.full_name}
-                        className="w-12 h-12 rounded-full"
-                      />
-                      <div>
-                        <p className="font-semibold">{appointment.doctors?.full_name}</p>
-                        <p className="text-sm text-gray-600">
-                          {appointment.doctors?.specialties?.[0] || 'Specialist'}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {format(new Date(appointment.start_at), 'EEEE, MMM d, yyyy • h:mm a')}
-                        </p>
+                {appointments.map((appointment) => {
+                  const statusBadge = getStatusBadge(appointment.status, appointment.start_at);
+                  const StatusIcon = statusBadge.Icon;
+                  const isCompleted = appointment.status === 'completed';
+                  const isCancelled = appointment.status === 'cancelled' || appointment.status === 'no_show';
+
+                  return (
+                    <div
+                      key={appointment.id}
+                      className={`flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors ${
+                        isCompleted ? 'bg-green-50/50 border-green-200' :
+                        isCancelled ? 'bg-gray-50/50 border-gray-200 opacity-75' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <img
+                          src={appointment.doctors?.profile_photo_url || 'https://via.placeholder.com/48'}
+                          alt={appointment.doctors?.full_name}
+                          className={`w-12 h-12 rounded-full ${isCancelled ? 'grayscale' : ''}`}
+                        />
+                        <div>
+                          <p className={`font-semibold ${isCancelled ? 'text-gray-500' : ''}`}>
+                            {appointment.doctors?.full_name}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {appointment.doctors?.specialties?.[0] || 'Specialist'}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {format(new Date(appointment.start_at), 'EEEE, MMM d, yyyy • h:mm a')}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex flex-col gap-2">
-                        <Badge
-                          variant={appointment.status === 'confirmed' ? 'default' : 'secondary'}
+                      <div className="flex items-center gap-3">
+                        <div className="flex flex-col gap-2 items-end">
+                          <Badge className={`${statusBadge.color} flex items-center gap-1`}>
+                            <StatusIcon className="h-3 w-3" />
+                            {statusBadge.label}
+                          </Badge>
+                          {!isCompleted && !isCancelled && (
+                            <MeetingLinkButton appointment={appointment} />
+                          )}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/doctor/${appointment.doctor_id}`)}
                         >
-                          {appointment.status === 'confirmed' ? 'Confirmed' : 'Pending Payment'}
-                        </Badge>
-                        <MeetingLinkButton appointment={appointment} />
+                          View Details
+                        </Button>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => navigate(`/doctor/${appointment.doctor_id}`)}
-                      >
-                        View Details
-                      </Button>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
@@ -569,15 +610,13 @@ const PatientDashboardNew: React.FC = () => {
 
             <Card
               className="hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => {
-                toast.info('Prescriptions will appear after consultations');
-              }}
+              onClick={() => navigate('/patient/prescriptions')}
             >
               <CardContent className="pt-6 text-center">
                 <FileText className="h-10 w-10 text-green-600 mx-auto mb-2" />
                 <h3 className="font-semibold">Prescriptions</h3>
                 <p className="text-xs text-gray-500 mt-1">
-                  {visits.length > 0 ? 'View past prescriptions' : 'No prescriptions yet'}
+                  View past prescriptions
                 </p>
               </CardContent>
             </Card>
@@ -599,13 +638,15 @@ const PatientDashboardNew: React.FC = () => {
 
             <Card
               className="hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => navigate('/doctors')}
+              onClick={() => {
+                document.querySelector('[data-section="appointments"]')?.scrollIntoView({ behavior: 'smooth' });
+              }}
             >
               <CardContent className="pt-6 text-center">
                 <Calendar className="h-10 w-10 text-blue-600 mx-auto mb-2" />
                 <h3 className="font-semibold">Appointments</h3>
                 <p className="text-xs text-gray-500 mt-1">
-                  {appointments.length > 0 ? `${appointments.length} upcoming` : 'Book new appointment'}
+                  {appointments.length > 0 ? `${appointments.length} total` : 'Book new appointment'}
                 </p>
               </CardContent>
             </Card>

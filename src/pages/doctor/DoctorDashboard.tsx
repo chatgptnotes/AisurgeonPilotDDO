@@ -35,6 +35,7 @@ import { AppointmentListModal } from '@/components/appointments/AppointmentListM
 import { PatientListModal } from '@/components/doctor/PatientListModal';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { DoctorSidebar } from '@/components/doctor/DoctorSidebar';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 interface Patient {
   id: string;
@@ -174,10 +175,26 @@ const DoctorDashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    if (user?.id) {
+    // FIRST: Check localStorage for doctor info set during login
+    const storedDoctorId = localStorage.getItem('doctor_id');
+    const storedDoctorName = localStorage.getItem('doctor_name');
+    const storedDoctorEmail = localStorage.getItem('doctor_email');
+
+    if (storedDoctorId) {
+      // Use localStorage data immediately for instant display
+      setDoctorId(storedDoctorId);
+      if (storedDoctorName) {
+        setDoctorProfile({
+          full_name: storedDoctorName,
+          email: storedDoctorEmail || '',
+        });
+      }
+      console.log('Doctor profile loaded from localStorage:', storedDoctorName);
+    } else {
+      // No localStorage data, try fetching from database
       fetchDoctorProfile();
     }
-  }, [user]);
+  }, []);  // Run once on mount
 
   useEffect(() => {
     if (doctorId) {
@@ -201,11 +218,15 @@ const DoctorDashboard: React.FC = () => {
         return;
       }
 
+      // Use localStorage user_id (set during login) or session user id
+      const authUserId = localStorage.getItem('user_id') || session.user.id;
+      console.log('Fetching doctor profile with user_id:', authUserId);
+
       // STRATEGY 1: Try fetching by user_id (preferred method)
       let { data, error } = await supabase
         .from('doctors')
         .select('id, full_name, email, user_id')
-        .eq('user_id', user?.id)
+        .eq('user_id', authUserId)
         .single();
 
       // STRATEGY 2: If not found by user_id, try fetching by email (fallback)
@@ -275,9 +296,13 @@ const DoctorDashboard: React.FC = () => {
       if (data) {
         setDoctorId(data.id);
         setDoctorProfile({
-          full_name: data.full_name || 'Dr. User',
-          email: data.email || user?.email || 'doctor@example.com',
+          full_name: data.full_name,
+          email: data.email || '',
         });
+        // Also update localStorage with latest data
+        localStorage.setItem('doctor_id', data.id);
+        localStorage.setItem('doctor_name', data.full_name);
+        localStorage.setItem('doctor_email', data.email || '');
         console.log('Doctor profile loaded successfully:', data.full_name);
       }
     } catch (err) {
@@ -662,7 +687,8 @@ const DoctorDashboard: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
+                <NotificationBell />
                 <Button
                   onClick={() => setIsQuickBookingOpen(true)}
                   className="bg-green-600 hover:bg-green-700"
@@ -765,6 +791,48 @@ const DoctorDashboard: React.FC = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* DDO Features Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <MessageSquare className="h-5 w-5 mr-2" />
+              Digital Doctor Office (DDO)
+              <Badge className="ml-2 bg-green-500 text-white">NEW</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <Button
+                variant="outline"
+                className="justify-start relative"
+                onClick={() => navigate('/whatsapp-service-test')}
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                WhatsApp Manager
+                <Badge className="ml-auto bg-green-500 text-white text-xs">NEW</Badge>
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start relative"
+                onClick={() => navigate('/patient-followup')}
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Patient Follow-up
+                <Badge className="ml-auto bg-green-500 text-white text-xs">NEW</Badge>
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start relative"
+                onClick={() => navigate('/patient-education')}
+              >
+                <Video className="h-4 w-4 mr-2" />
+                Patient Education
+                <Badge className="ml-auto bg-green-500 text-white text-xs">NEW</Badge>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Hospital Management Quick Access */}
         <Card>
@@ -885,48 +953,6 @@ const DoctorDashboard: React.FC = () => {
               >
                 <FileText className="h-4 w-4 mr-2" />
                 Bill Management
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* DDO Features Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <MessageSquare className="h-5 w-5 mr-2" />
-              Digital Doctor Office (DDO)
-              <Badge className="ml-2 bg-green-500 text-white">NEW</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Button
-                variant="outline"
-                className="justify-start relative"
-                onClick={() => navigate('/whatsapp-service-test')}
-              >
-                <MessageSquare className="h-4 w-4 mr-2" />
-                WhatsApp Manager
-                <Badge className="ml-auto bg-green-500 text-white text-xs">NEW</Badge>
-              </Button>
-              <Button
-                variant="outline"
-                className="justify-start relative"
-                onClick={() => navigate('/patient-followup')}
-              >
-                <Users className="h-4 w-4 mr-2" />
-                Patient Follow-up
-                <Badge className="ml-auto bg-green-500 text-white text-xs">NEW</Badge>
-              </Button>
-              <Button
-                variant="outline"
-                className="justify-start relative"
-                onClick={() => navigate('/patient-education')}
-              >
-                <Video className="h-4 w-4 mr-2" />
-                Patient Education
-                <Badge className="ml-auto bg-green-500 text-white text-xs">NEW</Badge>
               </Button>
             </div>
           </CardContent>
