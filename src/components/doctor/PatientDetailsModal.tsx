@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { UploadDocumentModal } from './UploadDocumentModal';
 import { WritePrescriptionModal } from './WritePrescriptionModal';
 import { WriteLabReportModal } from './WriteLabReportModal';
+import { OpdSummaryModal } from './OpdSummaryModal';
 import {
   User,
   Phone,
@@ -35,7 +36,19 @@ import {
   Upload,
   ClipboardList,
   CheckCircle,
+  Stethoscope,
+  Plus,
+  Save,
 } from 'lucide-react';
+import { useDiagnoses } from '@/hooks/useDiagnoses';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Patient {
   id: string;
@@ -48,6 +61,7 @@ interface Patient {
   address?: string;
   blood_group?: string;
   allergies?: string;
+  primary_diagnosis?: string;
 }
 
 interface PatientWithAppointment extends Patient {
@@ -87,8 +101,24 @@ export function PatientDetailsModal({ open, onClose, patient, doctorId, onPatien
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
   const [isLabReportModalOpen, setIsLabReportModalOpen] = useState(false);
+  const [isOpdSummaryModalOpen, setIsOpdSummaryModalOpen] = useState(false);
+
+  // Diagnosis state
+  const [selectedDiagnosis, setSelectedDiagnosis] = useState<string>(patient.primary_diagnosis || '');
+  const [isAddingNewDiagnosis, setIsAddingNewDiagnosis] = useState(false);
+  const [newDiagnosisName, setNewDiagnosisName] = useState('');
+  const [isSavingDiagnosis, setIsSavingDiagnosis] = useState(false);
+
+  const { diagnoses, isLoading: diagnosesLoading, addDiagnosis, isAddingDiagnosis } = useDiagnoses();
 
   const patientName = patient.name || 'Unknown Patient';
+
+  // Reset diagnosis state when patient changes
+  useEffect(() => {
+    setSelectedDiagnosis(patient.primary_diagnosis || '');
+    setIsAddingNewDiagnosis(false);
+    setNewDiagnosisName('');
+  }, [patient.id, patient.primary_diagnosis]);
 
   useEffect(() => {
     if (open && patient?.id) {
@@ -184,6 +214,40 @@ export function PatientDetailsModal({ open, onClose, patient, doctorId, onPatien
     const subject = encodeURIComponent(`Medical Consultation - Dr. Office`);
     const body = encodeURIComponent(`Dear ${patientName},\n\nThank you for your visit.\n\nBest regards`);
     window.location.href = `mailto:${patient.email}?subject=${subject}&body=${body}`;
+  };
+
+  const handleSaveDiagnosis = async () => {
+    if (!selectedDiagnosis || selectedDiagnosis === patient.primary_diagnosis) return;
+
+    setIsSavingDiagnosis(true);
+    try {
+      const { error } = await supabase
+        .from('patients')
+        .update({ primary_diagnosis: selectedDiagnosis })
+        .eq('id', patient.id);
+
+      if (error) throw error;
+
+      toast.success('Diagnosis saved successfully');
+      onPatientUpdated?.();
+    } catch (error) {
+      console.error('Error saving diagnosis:', error);
+      toast.error('Failed to save diagnosis');
+    } finally {
+      setIsSavingDiagnosis(false);
+    }
+  };
+
+  const handleAddNewDiagnosis = () => {
+    if (!newDiagnosisName.trim()) return;
+
+    addDiagnosis({ name: newDiagnosisName.trim() }, {
+      onSuccess: (data) => {
+        setSelectedDiagnosis(newDiagnosisName.trim());
+        setNewDiagnosisName('');
+        setIsAddingNewDiagnosis(false);
+      }
+    });
   };
 
   const getStatusBadge = (status: string) => {
@@ -297,6 +361,107 @@ export function PatientDetailsModal({ open, onClose, patient, doctorId, onPatien
                         <p className="font-medium">{patient.blood_group}</p>
                       </div>
                     </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Diagnosis */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Stethoscope className="h-4 w-4 text-blue-600" />
+                    Diagnosis
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {!isAddingNewDiagnosis ? (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <Select
+                          value={selectedDiagnosis}
+                          onValueChange={setSelectedDiagnosis}
+                        >
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Select a diagnosis..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {diagnosesLoading ? (
+                              <div className="px-2 py-1.5 text-sm text-gray-500">Loading...</div>
+                            ) : diagnoses.length === 0 ? (
+                              <div className="px-2 py-1.5 text-sm text-gray-500">No diagnoses available</div>
+                            ) : (
+                              diagnoses.map((diagnosis) => (
+                                <SelectItem key={diagnosis.id} value={diagnosis.name}>
+                                  {diagnosis.name}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsAddingNewDiagnosis(true)}
+                          className="text-blue-600"
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add New
+                        </Button>
+                        {selectedDiagnosis && selectedDiagnosis !== patient.primary_diagnosis && (
+                          <Button
+                            size="sm"
+                            onClick={handleSaveDiagnosis}
+                            disabled={isSavingDiagnosis}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <Save className="h-4 w-4 mr-1" />
+                            {isSavingDiagnosis ? 'Saving...' : 'Save'}
+                          </Button>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="Enter new diagnosis name..."
+                        value={newDiagnosisName}
+                        onChange={(e) => setNewDiagnosisName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleAddNewDiagnosis();
+                          if (e.key === 'Escape') {
+                            setIsAddingNewDiagnosis(false);
+                            setNewDiagnosisName('');
+                          }
+                        }}
+                        autoFocus
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={handleAddNewDiagnosis}
+                          disabled={isAddingDiagnosis || !newDiagnosisName.trim()}
+                        >
+                          {isAddingDiagnosis ? 'Adding...' : 'Add Diagnosis'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setIsAddingNewDiagnosis(false);
+                            setNewDiagnosisName('');
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  {patient.primary_diagnosis && (
+                    <p className="text-sm text-gray-500">
+                      Current: <span className="font-medium text-gray-700">{patient.primary_diagnosis}</span>
+                    </p>
                   )}
                 </CardContent>
               </Card>
@@ -507,7 +672,7 @@ export function PatientDetailsModal({ open, onClose, patient, doctorId, onPatien
                       <Upload className="h-4 w-4 mr-2 text-blue-600" />
                       Upload Document
                     </Button>
-                    <Button className="w-full justify-start" variant="outline" onClick={() => toast.info('OPD Summary feature coming soon')}>
+                    <Button className="w-full justify-start" variant="outline" onClick={() => setIsOpdSummaryModalOpen(true)}>
                       <ClipboardList className="h-4 w-4 mr-2 text-green-600" />
                       OPD Summary
                     </Button>
@@ -577,6 +742,16 @@ export function PatientDetailsModal({ open, onClose, patient, doctorId, onPatien
       patientName={patientName}
       doctorId={doctorId}
       onReportSaved={onPatientUpdated}
+    />
+
+    {/* OPD Summary Modal */}
+    <OpdSummaryModal
+      open={isOpdSummaryModalOpen}
+      onClose={() => setIsOpdSummaryModalOpen(false)}
+      patientId={patient.id}
+      patientName={patientName}
+      doctorId={doctorId}
+      onSummaryPublished={onPatientUpdated}
     />
     </>
   );

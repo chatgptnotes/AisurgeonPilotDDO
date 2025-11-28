@@ -1340,6 +1340,48 @@ class WhatsAppService {
   }
 
   /**
+   * Send video consultation reminder 15 minutes before appointment
+   * Includes meeting link for patient to join
+   */
+  public async sendVideoConsultationReminder15min(
+    phoneNumber: string,
+    patientName: string,
+    doctorName: string,
+    date: string,
+    time: string,
+    meetingLink: string,
+    clinicName: string = 'AI Surgeon Pilot'
+  ): Promise<WhatsAppServiceResponse> {
+    console.log('[WhatsApp Service] Sending 15-min video consultation reminder:', {
+      phoneNumber,
+      patientName,
+      doctorName,
+      date,
+      time,
+      meetingLink,
+      clinicName
+    });
+
+    // Template variables for video_consultation_15min_reminder
+    // "Hi {{1}}, Your video consultation with Dr. {{2}} starts in 15 minutes!
+    // Date: {{3}} Time: {{4}} Click here to join: {{5}} - {{6}}"
+    const variables = [
+      patientName,    // {{1}} - Patient name
+      doctorName,     // {{2}} - Doctor name
+      date,           // {{3}} - Date
+      time,           // {{4}} - Time
+      meetingLink,    // {{5}} - Meeting link
+      clinicName      // {{6}} - Clinic name
+    ];
+
+    return this.sendWhatsAppTemplate({
+      to: phoneNumber,
+      template: 'video_consultation_15min_reminder',
+      variables: variables.filter(v => v !== '')
+    });
+  }
+
+  /**
    * Get service configuration status
    */
   public getConfigStatus(): {

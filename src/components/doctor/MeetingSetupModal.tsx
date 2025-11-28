@@ -22,7 +22,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Copy, Share2, Video, Link, Calendar, Clock, Mail, MessageSquare, Check } from 'lucide-react';
+import { Copy, Share2, Video, Link, Calendar, Clock, Mail, MessageSquare, Check, Send, Loader2 } from 'lucide-react';
+import { whatsappService } from '@/services/whatsappService';
 
 interface MeetingDetails {
   title: string;
@@ -58,6 +59,11 @@ export function MeetingSetupModal({ open, onClose, doctorName }: Props) {
     agenda: '',
   });
   const [copied, setCopied] = useState<string | null>(null);
+
+  // WhatsApp reminder state
+  const [patientPhone, setPatientPhone] = useState('');
+  const [patientName, setPatientName] = useState('');
+  const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
 
   // Generate a meeting link based on platform
   const generateMeetingLink = () => {
@@ -141,6 +147,51 @@ export function MeetingSetupModal({ open, onClose, doctorName }: Props) {
       case 'teams': return 'Microsoft Teams';
       case 'custom': return 'Custom Link';
       default: return platform;
+    }
+  };
+
+  const sendWhatsAppReminder = async () => {
+    if (!patientPhone.trim()) {
+      toast.error('Please enter patient phone number');
+      return;
+    }
+    if (!patientName.trim()) {
+      toast.error('Please enter patient name');
+      return;
+    }
+    if (!meetingDetails.meetingLink) {
+      toast.error('Please set up meeting link first');
+      return;
+    }
+
+    setSendingWhatsApp(true);
+    try {
+      const formattedDate = format(new Date(meetingDetails.date), 'dd MMM yyyy');
+      const formattedTime = format(new Date(`${meetingDetails.date}T${meetingDetails.time}`), 'h:mm a');
+
+      const response = await whatsappService.sendVideoConsultationReminder15min(
+        patientPhone.trim(),
+        patientName.trim(),
+        doctorName || 'Doctor',
+        formattedDate,
+        formattedTime,
+        meetingDetails.meetingLink,
+        'AI Surgeon Pilot'
+      );
+
+      if (response.success) {
+        toast.success('WhatsApp reminder sent successfully!');
+        // Clear fields after successful send
+        setPatientPhone('');
+        setPatientName('');
+      } else {
+        toast.error(response.error || 'Failed to send WhatsApp reminder');
+      }
+    } catch (error) {
+      console.error('WhatsApp send error:', error);
+      toast.error('Failed to send WhatsApp reminder. Please try again.');
+    } finally {
+      setSendingWhatsApp(false);
     }
   };
 
@@ -443,12 +494,65 @@ export function MeetingSetupModal({ open, onClose, doctorName }: Props) {
               </CardContent>
             </Card>
 
+            {/* WhatsApp Reminder - Send to Patient */}
+            <Card className="border-green-200 bg-green-50">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center gap-2 text-green-800">
+                  <MessageSquare className="h-5 w-5 text-green-600" />
+                  Send WhatsApp Reminder to Patient
+                  <Badge className="ml-2 bg-green-600 text-white text-xs">NEW</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-green-700">
+                  Send a WhatsApp message to the patient with the meeting link. They will receive the reminder with all details to join the video consultation.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="patientName">Patient Name *</Label>
+                    <Input
+                      id="patientName"
+                      placeholder="Enter patient name"
+                      value={patientName}
+                      onChange={(e) => setPatientName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="patientPhone">Patient Phone Number *</Label>
+                    <Input
+                      id="patientPhone"
+                      placeholder="e.g., 9876543210"
+                      value={patientPhone}
+                      onChange={(e) => setPatientPhone(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <Button
+                  className="w-full bg-green-600 hover:bg-green-700"
+                  onClick={sendWhatsAppReminder}
+                  disabled={sendingWhatsApp || !patientPhone || !patientName}
+                >
+                  {sendingWhatsApp ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Send WhatsApp Reminder with Meeting Link
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+
             {/* Share Options */}
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Share2 className="h-5 w-5" />
-                  Share Meeting Details
+                  Other Sharing Options
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -461,7 +565,7 @@ export function MeetingSetupModal({ open, onClose, doctorName }: Props) {
                     <MessageSquare className="h-5 w-5 mr-3 text-green-600" />
                     <div className="text-left">
                       <div className="font-medium">WhatsApp</div>
-                      <div className="text-xs text-gray-500">Share via WhatsApp</div>
+                      <div className="text-xs text-gray-500">Open WhatsApp to share</div>
                     </div>
                   </Button>
 

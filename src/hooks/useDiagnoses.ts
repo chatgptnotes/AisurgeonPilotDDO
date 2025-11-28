@@ -28,11 +28,20 @@ export const useDiagnoses = () => {
   const addDiagnosisMutation = useMutation({
     mutationFn: async (params: { name: string, description?: string }) => {
       console.log('Adding diagnosis with params:', params);
+
+      // Generate a unique code from the name (uppercase, no spaces, with timestamp for uniqueness)
+      const baseCode = params.name
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '')
+        .substring(0, 10);
+      const uniqueCode = `${baseCode}_${Date.now().toString(36).toUpperCase()}`;
+
       const { data, error } = await supabase
         .from('diagnoses')
-        .insert({ 
-          name: params.name, 
-          description: params.description || null 
+        .insert({
+          code: uniqueCode,
+          name: params.name,
+          description: params.description || null
         })
         .select()
         .single();
