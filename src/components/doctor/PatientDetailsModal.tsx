@@ -13,6 +13,7 @@ import { UploadDocumentModal } from './UploadDocumentModal';
 import { WritePrescriptionModal } from './WritePrescriptionModal';
 import { WriteLabReportModal } from './WriteLabReportModal';
 import { OpdSummaryModal } from './OpdSummaryModal';
+import { PatientDocumentsView } from './PatientDocumentsView';
 import {
   User,
   Phone,
@@ -365,6 +366,9 @@ export function PatientDetailsModal({ open, onClose, patient, doctorId, onPatien
                 </CardContent>
               </Card>
 
+              {/* Patient Uploaded Documents */}
+              <PatientDocumentsView patientId={patient.id} />
+
               {/* Diagnosis */}
               <Card>
                 <CardHeader className="pb-3">
@@ -516,6 +520,7 @@ export function PatientDetailsModal({ open, onClose, patient, doctorId, onPatien
                   </CardContent>
                 </Card>
               )}
+
             </TabsContent>
 
             {/* Appointments Tab */}

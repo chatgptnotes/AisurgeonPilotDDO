@@ -29,6 +29,7 @@ import { toast } from 'sonner';
 import { whatsappService } from '@/services/whatsappService';
 import { emailService } from '@/services/emailService';
 import { ConsultationWorkspace } from '@/components/consultation/ConsultationWorkspace';
+import { PatientDocumentsView } from '@/components/doctor/PatientDocumentsView';
 
 interface Patient {
   id: string;
@@ -417,6 +418,10 @@ export function AppointmentDetailsModal({ appointment, open, onClose, onUpdate }
               </div>
             </>
           )}
+
+          {/* Patient Uploaded Documents */}
+          <Separator />
+          <PatientDocumentsView appointmentId={appointment.id} />
 
           {/* Reschedule Section */}
           {isRescheduling && (

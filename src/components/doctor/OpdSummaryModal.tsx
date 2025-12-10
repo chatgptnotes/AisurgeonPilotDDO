@@ -346,6 +346,18 @@ export function OpdSummaryModal({
                         )}
                       </div>
 
+                      {/* Warning if no diagnosis */}
+                      {!fetchedData.diagnosis && (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-sm text-red-700 font-medium">
+                            Please add a diagnosis before generating OPD Summary
+                          </p>
+                          <p className="text-xs text-red-600 mt-1">
+                            Go to patient profile and add a primary diagnosis first.
+                          </p>
+                        </div>
+                      )}
+
                       {/* Action Buttons */}
                       <div className="flex gap-2 pt-2">
                         <Button
@@ -363,8 +375,9 @@ export function OpdSummaryModal({
                         </Button>
                         <Button
                           onClick={handleGenerateSummary}
-                          disabled={isGenerating || !fetchedData}
-                          className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                          disabled={isGenerating || !fetchedData || !fetchedData.diagnosis}
+                          className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title={!fetchedData?.diagnosis ? 'Please add diagnosis first' : ''}
                         >
                           {isGenerating ? (
                             <>

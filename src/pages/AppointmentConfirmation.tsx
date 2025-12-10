@@ -20,13 +20,10 @@ import {
   FileText,
   AlertCircle,
   Copy,
-  Eye,
-  EyeOff,
   ExternalLink
 } from 'lucide-react';
 import { getModeIcon, getModeLabel, formatAppointmentTime } from '@/utils/appointmentHelpers';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import PatientDocumentUpload from '@/components/patient/PatientDocumentUpload';
 
 interface Doctor {
   id: string;
@@ -76,7 +73,6 @@ export default function AppointmentConfirmation() {
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     loadAppointment();
@@ -308,36 +304,27 @@ export default function AppointmentConfirmation() {
               </CardContent>
             </Card>
 
-            {/* Zoom Meeting Details */}
-            {appointment.mode === 'video' && appointment.doctors?.zoom_meeting_link && (
-              <Card className="border-2 border-blue-200 bg-blue-50">
+            {/* Video Meeting Details - Only shown when doctor has shared the meeting link */}
+            {appointment.mode === 'video' && appointment.meeting_link && (
+              <Card className="border-2 border-green-200 bg-green-50">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Video className="h-5 w-5 text-blue-600" />
-                    Zoom Meeting Details
+                    <Video className="h-5 w-5 text-green-600" />
+                    Video Meeting Details
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <Label className="text-sm text-muted-foreground">Platform</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant="outline">Zoom</Badge>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-sm text-muted-foreground">Meeting Link</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Input
-                        value={appointment.doctors.zoom_meeting_link}
-                        readOnly
-                        className="font-mono text-sm"
-                      />
+                  <div className="bg-white rounded-lg p-4 border">
+                    <p className="text-sm text-gray-600 mb-2">Meeting Link</p>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 bg-gray-100 px-3 py-2 rounded text-sm break-all">
+                        {appointment.meeting_link}
+                      </code>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          navigator.clipboard.writeText(appointment.doctors.zoom_meeting_link || '');
+                          navigator.clipboard.writeText(appointment.meeting_link || '');
                           toast.success('Link copied!');
                         }}
                       >
@@ -346,53 +333,16 @@ export default function AppointmentConfirmation() {
                     </div>
                   </div>
 
-                  {appointment.doctors.zoom_password && (
-                    <div>
-                      <Label className="text-sm text-muted-foreground">Password</Label>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Input
-                          value={appointment.doctors.zoom_password}
-                          type={showPassword ? 'text' : 'password'}
-                          readOnly
-                          className="font-mono"
-                        />
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {appointment.doctors.zoom_meeting_id && (
-                    <div>
-                      <Label className="text-sm text-muted-foreground">Meeting ID</Label>
-                      <div className="mt-1 font-mono text-lg font-semibold">
-                        {appointment.doctors.zoom_meeting_id}
-                      </div>
-                    </div>
-                  )}
-
-                  {appointment.doctors.zoom_instructions && (
-                    <div className="pt-2 border-t">
-                      <Label className="text-sm text-muted-foreground">Instructions</Label>
-                      <p className="mt-1 text-sm">{appointment.doctors.zoom_instructions}</p>
-                    </div>
-                  )}
-
                   <Button
-                    className="w-full"
+                    className="w-full bg-green-600 hover:bg-green-700"
                     size="lg"
-                    onClick={() => window.open(appointment.doctors.zoom_meeting_link, '_blank')}
+                    onClick={() => window.open(appointment.meeting_link, '_blank')}
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
-                    Open Zoom Meeting
+                    Join Video Meeting
                   </Button>
 
-                  <div className="pt-3 border-t text-sm text-blue-800">
+                  <div className="pt-3 border-t text-sm text-green-800">
                     <p className="font-medium mb-2">Before joining:</p>
                     <ul className="list-disc list-inside space-y-1">
                       <li>Ensure you have a stable internet connection</li>
@@ -464,6 +414,13 @@ export default function AppointmentConfirmation() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Patient Document Upload Section */}
+            <PatientDocumentUpload
+              appointmentId={appointment.id}
+              patientId={appointment.patient_id}
+              doctorId={appointment.doctor_id}
+            />
           </div>
 
           {/* Payment Summary Sidebar */}

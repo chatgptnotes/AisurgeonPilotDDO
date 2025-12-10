@@ -26,20 +26,22 @@ export interface PatientOpdData {
   }>;
 }
 
-const OPD_SUMMARY_PROMPT = `Act like a medical specialist. Make a professionally written OPD summary. Make up facts. Add findings which are not provided to you. Come up with creative complaints, events during visit to hospital and relevant examination findings, add medications to be taken at home in Indian BRANDS.
+const OPD_SUMMARY_PROMPT = `Act like a medical specialist. Make a professionally written OPD summary based ONLY on the provided patient data.
 
-The entire summary should be a minimum of 400 words. Do not mention the name, sex or age of the patient. The person who is going to read what you share will be a doctor.
+IMPORTANT: Do NOT invent or make up any information. Only use the data provided. If prescriptions or lab reports are not provided, clearly state "No prescriptions on record" or "No lab reports on record" respectively.
+
+The summary should be comprehensive but factual. Do not mention the name, sex or age of the patient. The person who is going to read what you share will be a doctor.
 
 Start summary with the Diagnosis followed by medication. These should be at the beginning of summary and in table form with columns for name, strength, route, dosage and the number of days to be taken. Another line in Hindi to be added in the column of dosage in addition to English.
 
-This patient does not have comorbidities other than that is mentioned.Do not add any lab reports that have not attched with the  patient details .Thank you! 
+This patient does not have comorbidities other than that is mentioned. Do not add any lab reports that have not been provided with the patient details.
 
 Format the output in Markdown with:
 - A clear heading for Diagnosis
-- A markdown table for medications with columns: Medicine Name | Strength | Route | Dosage  | Days
+- A markdown table for medications with columns: Medicine Name | Strength | Route | Dosage | Days (only if prescriptions exist)
 - Sections for: Chief Complaints, History of Present Illness, Examination Findings, Investigations, Treatment Plan, Advice & Follow-up
 
-Make it look professional and comprehensive.`;
+Make it look professional and factual based on provided data only.`;
 
 export async function generateOpdSummary(data: PatientOpdData): Promise<string> {
   const userMessage = `Generate an OPD summary based on the following patient data:

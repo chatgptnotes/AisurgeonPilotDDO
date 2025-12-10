@@ -575,7 +575,7 @@ const PatientDashboardNew: React.FC = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => navigate(`/doctor/${appointment.doctor_id}`)}
+                          onClick={() => navigate(`/appointment/confirm/${appointment.id}`)}
                         >
                           View Details
                         </Button>

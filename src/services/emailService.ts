@@ -966,6 +966,22 @@ class EmailService {
   }
 
   /**
+   * Generic send email method (for compatibility with other services)
+   */
+  async sendEmail(data: {
+    to: string;
+    subject: string;
+    html: string;
+    text?: string;
+  }): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    return this.sendViaResend({
+      to: data.to,
+      subject: data.subject,
+      html: data.html
+    });
+  }
+
+  /**
    * Send OTP email for patient login
    */
   async sendOTP(data: {
