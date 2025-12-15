@@ -244,6 +244,18 @@ export const DoctorSidebar: React.FC<DoctorSidebarProps> = ({
                     <span>Surgery Options</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => navigate('/doctor/meeting')}
+                    isActive={isActive('/doctor/meeting')}
+                    className="w-full"
+                  >
+                    <Video className="h-4 w-4" />
+                    <span>Meeting</span>
+                    <Badge className="ml-auto bg-blue-500 text-white text-xs">NEW</Badge>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           )}

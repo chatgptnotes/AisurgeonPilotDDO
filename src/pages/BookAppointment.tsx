@@ -32,6 +32,11 @@ interface TimeSlot {
   available: boolean;
 }
 
+interface DateAvailability {
+  available: boolean;
+  reason?: 'not_working' | 'blocked' | 'available';
+}
+
 const BookAppointment: React.FC = () => {
   const { doctorId } = useParams<{ doctorId: string }>();
   const [searchParams] = useSearchParams();
@@ -50,6 +55,10 @@ const BookAppointment: React.FC = () => {
   const [appointmentMode, setAppointmentMode] = useState<'in-person' | 'video' | 'phone'>('in-person');
   const [symptoms, setSymptoms] = useState('');
   const [reasonForVisit, setReasonForVisit] = useState('');
+
+  // Date availability tracking
+  const [dateAvailability, setDateAvailability] = useState<{ [key: string]: DateAvailability }>({});
+  const [unavailableReason, setUnavailableReason] = useState<string | null>(null);
 
   // Session timeout hook
   const { isSessionValid } = useSessionTimeout({
@@ -167,19 +176,27 @@ const BookAppointment: React.FC = () => {
 
       const availability = availabilityData as any;
 
-      // Check for existing appointments on this date
-      const startOfDay = new Date(selectedDate);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(selectedDate);
-      endOfDay.setHours(23, 59, 59, 999);
+      // Check if this date is blocked (vacation/leave)
+      const { data: blackoutDate } = await supabase
+        .from('doctor_blackout_dates')
+        .select('id')
+        .eq('doctor_id', doctorId)
+        .eq('date', format(selectedDate, 'yyyy-MM-dd'))
+        .single();
 
+      if (blackoutDate) {
+        // This date is blocked - no slots available
+        setTimeSlots([]);
+        return;
+      }
+
+      // Check for existing appointments on this date (using appointment_date for timezone safety)
       const { data: existingAppointments } = await supabase
         .from('appointments')
         .select('start_at')
         .eq('doctor_id', doctorId)
-        .gte('start_at', startOfDay.toISOString())
-        .lte('start_at', endOfDay.toISOString())
-        .in('status', ['confirmed', 'pending_payment']);
+        .eq('appointment_date', format(selectedDate, 'yyyy-MM-dd'))
+        .in('status', ['confirmed', 'pending_payment', 'scheduled']);
 
       const bookedTimes = new Set(
         (existingAppointments || []).map(apt => {
@@ -187,6 +204,11 @@ const BookAppointment: React.FC = () => {
           return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
         })
       );
+
+      // Debug: Log booked appointments for this date
+      if (existingAppointments && existingAppointments.length > 0) {
+        console.log(`[Slot Check] Date: ${format(selectedDate, 'yyyy-MM-dd')}, Booked times:`, [...bookedTimes]);
+      }
 
       // Generate slots
       const slots: TimeSlot[] = [];

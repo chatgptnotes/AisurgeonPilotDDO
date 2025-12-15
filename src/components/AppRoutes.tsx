@@ -47,6 +47,7 @@ const AppointmentConfirmation = lazy(() => import("../pages/AppointmentConfirmat
 const DoctorDashboard = lazy(() => import("../pages/doctor/DoctorDashboard"));
 const DoctorSettings = lazy(() => import("../pages/doctor/DoctorSettings"));
 const DoctorCalendar = lazy(() => import("../pages/doctor/DoctorCalendar"));
+const DoctorMeeting = lazy(() => import("../pages/doctor/DoctorMeeting"));
 
 // Lazy load Advanced Statement Report
 const AdvancedStatementReport = lazy(() => import("../pages/AdvancedStatementReport"));
@@ -166,6 +167,7 @@ export const AppRoutes = () => {
         <Route path="/doctor/dashboard" element={<Suspense fallback={<PageLoader />}><DoctorDashboard /></Suspense>} />
         <Route path="/doctor/settings" element={<Suspense fallback={<PageLoader />}><DoctorSettings /></Suspense>} />
         <Route path="/doctor/calendar" element={<Suspense fallback={<PageLoader />}><DoctorCalendar /></Suspense>} />
+        <Route path="/doctor/meeting" element={<Suspense fallback={<PageLoader />}><DoctorMeeting /></Suspense>} />
         <Route path="/patient-dashboard" element={<PatientDashboard />} />
         <Route path="/patient-overview" element={<PatientOverview />} />
         <Route path="/patient-profile" element={<Suspense fallback={<PageLoader />}><PatientProfile /></Suspense>} />
