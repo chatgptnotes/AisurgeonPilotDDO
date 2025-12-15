@@ -301,17 +301,34 @@ class WhatsAppService {
           const messageId = message.messageId;
           const status = message.status;
 
-          console.log('[WhatsApp Service] ✅ Message sent successfully:', {
-            messageId,
-            status,
-            recipient: message.recipient
-          });
+          // Only return success if status is ENQUEUED
+          if (status === 'ENQUEUED') {
+            console.log('[WhatsApp Service] ✅ Message sent successfully:', {
+              messageId,
+              status,
+              recipient: message.recipient
+            });
 
-          return {
-            success: true,
-            messageId,
-            retryCount: attempt
-          };
+            return {
+              success: true,
+              messageId,
+              retryCount: attempt
+            };
+          } else {
+            // DoubleTick returned an error status
+            console.error('[WhatsApp Service] ❌ DoubleTick returned error status:', {
+              status,
+              messageId,
+              recipient: message.recipient,
+              fullResponse: response.data
+            });
+
+            return {
+              success: false,
+              error: `DoubleTick returned status: ${status}. Check template name and variables.`,
+              retryCount: attempt
+            };
+          }
         }
 
         // Check old format for backward compatibility
@@ -1364,14 +1381,14 @@ class WhatsAppService {
 
     // Template variables for video_consultation_15min_reminder
     // "Hi {{1}}, Your video consultation with Dr. {{2}} starts in 15 minutes!
-    // Date: {{3}} Time: {{4}} Click here to join: {{5}} - {{6}}"
+    // Date: {{3}} Time: {{4}} Click here to join: {{5}}"
+    // NOTE: Template has 5 variables (no clinic name)
     const variables = [
       patientName,    // {{1}} - Patient name
       doctorName,     // {{2}} - Doctor name
       date,           // {{3}} - Date
       time,           // {{4}} - Time
-      meetingLink,    // {{5}} - Meeting link
-      clinicName      // {{6}} - Clinic name
+      meetingLink     // {{5}} - Meeting link
     ];
 
     return this.sendWhatsAppTemplate({

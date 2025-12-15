@@ -14,6 +14,8 @@ import { WritePrescriptionModal } from './WritePrescriptionModal';
 import { WriteLabReportModal } from './WriteLabReportModal';
 import { OpdSummaryModal } from './OpdSummaryModal';
 import { PatientDocumentsView } from './PatientDocumentsView';
+import { whatsappService } from '@/services/whatsappService';
+import { emailService } from '@/services/emailService';
 import {
   User,
   Phone,
@@ -103,6 +105,7 @@ export function PatientDetailsModal({ open, onClose, patient, doctorId, onPatien
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
   const [isLabReportModalOpen, setIsLabReportModalOpen] = useState(false);
   const [isOpdSummaryModalOpen, setIsOpdSummaryModalOpen] = useState(false);
+  const [isSendingMeetingLink, setIsSendingMeetingLink] = useState(false);
 
   // Diagnosis state
   const [selectedDiagnosis, setSelectedDiagnosis] = useState<string>(patient.primary_diagnosis || '');
@@ -215,6 +218,141 @@ export function PatientDetailsModal({ open, onClose, patient, doctorId, onPatien
     const subject = encodeURIComponent(`Medical Consultation - Dr. Office`);
     const body = encodeURIComponent(`Dear ${patientName},\n\nThank you for your visit.\n\nBest regards`);
     window.location.href = `mailto:${patient.email}?subject=${subject}&body=${body}`;
+  };
+
+  const handleSendMeetingLink = async () => {
+    setIsSendingMeetingLink(true);
+    try {
+      // 1. Fetch doctor's meeting link
+      const { data: doctorData, error: doctorError } = await supabase
+        .from('doctors')
+        .select('zoom_meeting_link, full_name')
+        .eq('id', doctorId)
+        .single();
+
+      if (doctorError) {
+        console.error('Error fetching doctor data:', doctorError);
+        toast.error('Failed to fetch doctor information');
+        return;
+      }
+
+      if (!doctorData?.zoom_meeting_link) {
+        toast.error('No meeting link configured for this doctor');
+        return;
+      }
+
+      // 2. Validate patient contact info
+      if (!patient.phone && !patient.email) {
+        toast.error('Patient has no phone or email');
+        return;
+      }
+
+      const doctorName = doctorData.full_name || 'Doctor';
+      const meetingLink = doctorData.zoom_meeting_link;
+      const currentDate = format(new Date(), 'dd MMM yyyy');
+      const currentTime = format(new Date(), 'hh:mm a');
+
+      let whatsappSuccess = false;
+      let emailSuccess = false;
+
+      // 3. Send WhatsApp (if phone exists)
+      if (patient.phone) {
+        try {
+          const result = await whatsappService.sendVideoConsultationReminder15min(
+            patient.phone,
+            patientName,
+            doctorName,
+            currentDate,
+            currentTime,
+            meetingLink,
+            'AI Surgeon Pilot'
+          );
+          whatsappSuccess = result.success;
+          if (!result.success) {
+            console.error('WhatsApp send failed:', result.error);
+          }
+        } catch (error) {
+          console.error('WhatsApp error:', error);
+        }
+      }
+
+      // 4. Send Email (if email exists)
+      if (patient.email) {
+        try {
+          const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #2563eb; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+    .highlight { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2563eb; }
+    .button { display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+    .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Video Consultation Link</h1>
+    </div>
+    <div class="content">
+      <p>Dear ${patientName},</p>
+      <p>Here is your video consultation link with <strong>Dr. ${doctorName}</strong>.</p>
+      <div class="highlight">
+        <p><strong>Date:</strong> ${currentDate}</p>
+        <p><strong>Time:</strong> ${currentTime}</p>
+      </div>
+      <p>Please click the button below to join your consultation:</p>
+      <a href="${meetingLink}" class="button">Join Video Consultation</a>
+      <p>Or copy this link: <a href="${meetingLink}">${meetingLink}</a></p>
+      <p><strong>Tips for a smooth consultation:</strong></p>
+      <ul>
+        <li>Ensure you have a stable internet connection</li>
+        <li>Test your camera and microphone beforehand</li>
+        <li>Find a quiet, well-lit space</li>
+        <li>Have your medical records ready if needed</li>
+      </ul>
+      <div class="footer">
+        <p>Best regards,<br>AI Surgeon Pilot</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+          const result = await emailService.sendEmail({
+            to: patient.email,
+            subject: `Video Consultation Link - Dr. ${doctorName}`,
+            html: emailHtml
+          });
+          emailSuccess = result.success;
+          if (!result.success) {
+            console.error('Email send failed:', result.error);
+          }
+        } catch (error) {
+          console.error('Email error:', error);
+        }
+      }
+
+      // 5. Show result
+      if (whatsappSuccess && emailSuccess) {
+        toast.success('Meeting link sent via WhatsApp and Email!');
+      } else if (whatsappSuccess) {
+        toast.success('Meeting link sent via WhatsApp!');
+      } else if (emailSuccess) {
+        toast.success('Meeting link sent via Email!');
+      } else {
+        toast.error('Failed to send meeting link');
+      }
+    } catch (error) {
+      console.error('Error sending meeting link:', error);
+      toast.error('Failed to send meeting link');
+    } finally {
+      setIsSendingMeetingLink(false);
+    }
   };
 
   const handleSaveDiagnosis = async () => {
@@ -654,6 +792,15 @@ export function PatientDetailsModal({ open, onClose, patient, doctorId, onPatien
                     <Button className="w-full justify-start" variant="outline" onClick={handleSendEmail}>
                       <Mail className="h-4 w-4 mr-2 text-blue-600" />
                       Send Email
+                    </Button>
+                    <Button
+                      className="w-full justify-start"
+                      variant="outline"
+                      onClick={handleSendMeetingLink}
+                      disabled={isSendingMeetingLink}
+                    >
+                      <Video className="h-4 w-4 mr-2 text-purple-600" />
+                      {isSendingMeetingLink ? 'Sending...' : 'Send Meeting Link'}
                     </Button>
                     <Button className="w-full justify-start" variant="outline" onClick={() => window.open(`tel:${patient.phone}`)}>
                       <Phone className="h-4 w-4 mr-2 text-gray-600" />
