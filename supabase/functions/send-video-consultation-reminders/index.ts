@@ -283,8 +283,7 @@ async function sendWhatsAppReminder(
                   params.doctorName,
                   params.date,
                   params.time,
-                  params.meetingLink,
-                  params.clinicName
+                  params.meetingLink
                 ]
               }
             }

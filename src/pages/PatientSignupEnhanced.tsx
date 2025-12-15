@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +37,8 @@ const FORM_ID = 'patient-signup-form';
 
 const PatientSignupEnhanced: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<PatientSignupForm>({
     email: '',
@@ -278,9 +280,14 @@ const PatientSignupEnhanced: React.FC = () => {
         description: `Your account has been created successfully. Patient ID: ${patientId}`
       });
 
-      // 7. Navigate to patient dashboard (user is already logged in)
+      // 7. Navigate to return URL or patient dashboard (user is already logged in)
       setTimeout(() => {
-        navigate('/patient-dashboard');
+        if (returnTo) {
+          // Redirect back to the booking page
+          navigate(decodeURIComponent(returnTo));
+        } else {
+          navigate('/patient-dashboard');
+        }
       }, 1500);
 
     } catch (error: any) {
@@ -308,6 +315,14 @@ const PatientSignupEnhanced: React.FC = () => {
           <p className="text-gray-600">
             Fill in your details to book appointments with doctors
           </p>
+          {returnTo && returnTo.includes('/book/') && (
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg inline-block">
+              <p className="text-sm text-green-800 flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Complete signup to continue with your appointment booking
+              </p>
+            </div>
+          )}
         </div>
 
         <form onSubmit={handleSignup}>

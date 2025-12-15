@@ -25,6 +25,7 @@ interface Doctor {
   consultation_fee_standard: number;
   consultation_fee_followup: number;
   currency: string;
+  slug?: string;
 }
 
 interface TimeSlot {
@@ -36,6 +37,9 @@ interface DateAvailability {
   available: boolean;
   reason?: 'not_working' | 'blocked' | 'available';
 }
+
+// Key for storing pending booking state before signup redirect
+const BOOKING_PENDING_KEY = 'pending_booking_state';
 
 const BookAppointment: React.FC = () => {
   const { doctorId } = useParams<{ doctorId: string }>();
@@ -59,6 +63,9 @@ const BookAppointment: React.FC = () => {
   // Date availability tracking
   const [dateAvailability, setDateAvailability] = useState<{ [key: string]: DateAvailability }>({});
   const [unavailableReason, setUnavailableReason] = useState<string | null>(null);
+
+  // Track if booking was restored after signup
+  const [isRestoredBooking, setIsRestoredBooking] = useState(false);
 
   // Session timeout hook
   const { isSessionValid } = useSessionTimeout({
@@ -124,11 +131,64 @@ const BookAppointment: React.FC = () => {
     };
   }, [FORM_ID, selectedDate, selectedTime, appointmentMode, symptoms, reasonForVisit, couponCode]);
 
+  // Check authentication on page load - redirect to signup if not logged in
+  useEffect(() => {
+    const patientId = localStorage.getItem('patient_id');
+    if (!patientId) {
+      // Build return URL with doctor slug/id
+      const returnUrl = encodeURIComponent(`/book/${doctorId}`);
+
+      toast.info('Please sign up or log in to book an appointment', {
+        description: 'Create an account to continue.',
+        duration: 4000
+      });
+
+      navigate(`/patient-signup?returnTo=${returnUrl}`);
+    }
+  }, [doctorId, navigate]);
+
   useEffect(() => {
     if (doctorId) {
       loadDoctor();
     }
   }, [doctorId]);
+
+  // Restore pending booking state after signup/login redirect
+  useEffect(() => {
+    const pendingBooking = localStorage.getItem(BOOKING_PENDING_KEY);
+    if (pendingBooking && doctor) {
+      try {
+        const state = JSON.parse(pendingBooking);
+        const isForThisDoctor = state.doctorId === doctor.id || state.doctorSlug === doctorId;
+        const isRecent = Date.now() - state.savedAt < 24 * 60 * 60 * 1000; // 24 hours
+
+        if (isForThisDoctor && isRecent) {
+          // Restore the booking state
+          if (state.selectedDate) setSelectedDate(new Date(state.selectedDate));
+          if (state.selectedTime) setSelectedTime(state.selectedTime);
+          if (state.appointmentMode) setAppointmentMode(state.appointmentMode);
+          if (state.symptoms) setSymptoms(state.symptoms);
+          if (state.reasonForVisit) setReasonForVisit(state.reasonForVisit);
+          if (state.couponCode) setCouponCode(state.couponCode);
+
+          // Clear the pending state
+          localStorage.removeItem(BOOKING_PENDING_KEY);
+          setIsRestoredBooking(true);
+
+          toast.success('Welcome back! Your booking selections have been restored.', {
+            description: 'Please review and confirm your appointment.',
+            duration: 4000
+          });
+        } else if (!isRecent) {
+          // Clear stale pending booking
+          localStorage.removeItem(BOOKING_PENDING_KEY);
+        }
+      } catch (error) {
+        console.error('Error restoring pending booking:', error);
+        localStorage.removeItem(BOOKING_PENDING_KEY);
+      }
+    }
+  }, [doctor, doctorId]);
 
   useEffect(() => {
     if (doctor) {
@@ -138,11 +198,16 @@ const BookAppointment: React.FC = () => {
 
   const loadDoctor = async () => {
     try {
-      const { data, error } = await supabase
+      // Check if doctorId is a UUID (36 chars with dashes) or a slug
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(doctorId || '');
+
+      const query = supabase
         .from('doctors')
-        .select('id, full_name, profile_photo_url, consultation_fee_standard, consultation_fee_followup, currency')
-        .eq('id', doctorId)
-        .single();
+        .select('id, full_name, profile_photo_url, consultation_fee_standard, consultation_fee_followup, currency, slug');
+
+      const { data, error } = isUUID
+        ? await query.eq('id', doctorId).single()
+        : await query.eq('slug', doctorId).single();
 
       if (error) throw error;
       setDoctor(data);
@@ -160,11 +225,11 @@ const BookAppointment: React.FC = () => {
     try {
       const dayOfWeek = selectedDate.getDay();
 
-      // Get doctor's availability for this day
+      // Get doctor's availability for this day (use doctor.id for slug-based access)
       const { data: availabilityData, error } = await supabase
         .from('doctor_availability')
         .select('*')
-        .eq('doctor_id', doctorId)
+        .eq('doctor_id', doctor.id)
         .eq('day_of_week', dayOfWeek)
         .eq('is_active', true)
         .single();
@@ -180,7 +245,7 @@ const BookAppointment: React.FC = () => {
       const { data: blackoutDate } = await supabase
         .from('doctor_blackout_dates')
         .select('id')
-        .eq('doctor_id', doctorId)
+        .eq('doctor_id', doctor.id)
         .eq('date', format(selectedDate, 'yyyy-MM-dd'))
         .single();
 
@@ -194,7 +259,7 @@ const BookAppointment: React.FC = () => {
       const { data: existingAppointments } = await supabase
         .from('appointments')
         .select('start_at')
-        .eq('doctor_id', doctorId)
+        .eq('doctor_id', doctor.id)
         .eq('appointment_date', format(selectedDate, 'yyyy-MM-dd'))
         .in('status', ['confirmed', 'pending_payment', 'scheduled']);
 
@@ -248,7 +313,7 @@ const BookAppointment: React.FC = () => {
         .from('coupons')
         .select('*')
         .eq('code', couponCode.toUpperCase())
-        .eq('doctor_id', doctorId)
+        .eq('doctor_id', doctor.id)
         .eq('is_active', true)
         .single();
 
@@ -297,8 +362,31 @@ const BookAppointment: React.FC = () => {
 
     const patientId = localStorage.getItem('patient_id');
     if (!patientId) {
-      toast.error('Please login to continue');
-      navigate('/login');
+      // Save current booking state before redirect to signup
+      const bookingState = {
+        doctorId: doctor.id,
+        doctorSlug: doctor.slug || doctorId,
+        selectedDate: selectedDate.toISOString(),
+        selectedTime,
+        appointmentMode,
+        appointmentType,
+        symptoms,
+        reasonForVisit,
+        couponCode,
+        savedAt: Date.now()
+      };
+
+      localStorage.setItem(BOOKING_PENDING_KEY, JSON.stringify(bookingState));
+
+      // Build return URL (use slug if available for cleaner URLs)
+      const returnUrl = encodeURIComponent(`/book/${doctor.slug || doctorId}`);
+
+      toast.info('Please sign up or log in to complete your booking', {
+        description: 'Your selections have been saved.',
+        duration: 5000
+      });
+
+      navigate(`/patient-signup?returnTo=${returnUrl}`);
       return;
     }
 
@@ -335,7 +423,7 @@ const BookAppointment: React.FC = () => {
         .from('appointments')
         .insert({
           tenant_id: tenantId,
-          doctor_id: doctorId,
+          doctor_id: doctor.id,
           patient_id: patientId,
           appointment_date: format(selectedDate, 'yyyy-MM-dd'),
           start_at: startAt.toISOString(),
@@ -443,12 +531,29 @@ const BookAppointment: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4">
         <Button
           variant="ghost"
-          onClick={() => navigate(`/doctor/${doctorId}`)}
+          onClick={() => navigate(`/doctor/${doctor?.id || doctorId}`)}
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Profile
         </Button>
+
+        {/* Restoration Banner - shown when booking state was restored after signup */}
+        {isRestoredBooking && (
+          <Card className="border-green-200 bg-green-50 mb-6">
+            <CardContent className="py-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center">
+                  <Check className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-green-900">Your booking selections have been restored</p>
+                  <p className="text-sm text-green-700">Please review the details below and click "Confirm Booking" to complete.</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Booking Form */}

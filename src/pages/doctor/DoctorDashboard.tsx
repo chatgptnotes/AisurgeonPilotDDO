@@ -34,6 +34,7 @@ import { QuickBookingModal } from '@/components/appointments/QuickBookingModal';
 import { AppointmentListModal } from '@/components/appointments/AppointmentListModal';
 import { PatientListModal } from '@/components/doctor/PatientListModal';
 import { MeetingSetupModal } from '@/components/doctor/MeetingSetupModal';
+import { ShareBookingLinkCard } from '@/components/doctor/ShareBookingLinkCard';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { DoctorSidebar } from '@/components/doctor/DoctorSidebar';
 import NotificationBell from '@/components/notifications/NotificationBell';
@@ -95,6 +96,7 @@ const DoctorDashboard: React.FC = () => {
   const [doctorProfile, setDoctorProfile] = useState<{
     full_name: string;
     email: string;
+    slug?: string;
   } | null>(null);
 
   // Hospital stats state
@@ -227,7 +229,7 @@ const DoctorDashboard: React.FC = () => {
       // STRATEGY 1: Try fetching by user_id (preferred method)
       let { data, error } = await supabase
         .from('doctors')
-        .select('id, full_name, email, user_id')
+        .select('id, full_name, email, user_id, slug')
         .eq('user_id', authUserId)
         .single();
 
@@ -241,7 +243,7 @@ const DoctorDashboard: React.FC = () => {
         if (doctorEmail) {
           const { data: emailData, error: emailError } = await supabase
             .from('doctors')
-            .select('id, full_name, email, user_id')
+            .select('id, full_name, email, user_id, slug')
             .eq('email', doctorEmail.toLowerCase())
             .single();
 
@@ -300,11 +302,13 @@ const DoctorDashboard: React.FC = () => {
         setDoctorProfile({
           full_name: data.full_name,
           email: data.email || '',
+          slug: data.slug || undefined,
         });
         // Also update localStorage with latest data
         localStorage.setItem('doctor_id', data.id);
         localStorage.setItem('doctor_name', data.full_name);
         localStorage.setItem('doctor_email', data.email || '');
+        if (data.slug) localStorage.setItem('doctor_slug', data.slug);
         console.log('Doctor profile loaded successfully:', data.full_name);
       }
     } catch (err) {
@@ -842,6 +846,15 @@ const DoctorDashboard: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Share Booking Link Card */}
+        {doctorId && doctorProfile && (
+          <ShareBookingLinkCard
+            doctorId={doctorId}
+            doctorSlug={doctorProfile.slug || null}
+            doctorName={doctorProfile.full_name}
+          />
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Today's Appointments */}
