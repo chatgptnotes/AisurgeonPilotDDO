@@ -843,130 +843,6 @@ const DoctorDashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Hospital Management Quick Access */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Building2 className="h-5 w-5 mr-2" />
-              Hospital Management
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Hope Hospital */}
-              <div
-                onClick={() => navigate('/')}
-                className="cursor-pointer p-4 rounded-lg border-2 border-blue-200 bg-blue-50 hover:bg-blue-100 transition-all hover:shadow-md group"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <Building2 className="h-6 w-6 text-blue-600" />
-                  <ArrowRight className="h-4 w-4 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-                <div className="text-2xl font-bold text-blue-900">{hospitalStats.hope}</div>
-                <div className="text-sm text-blue-700 font-medium">Hope Hospital</div>
-                <div className="text-xs text-blue-600 mt-1">patients</div>
-              </div>
-
-              {/* Ayushman Hospital */}
-              <div
-                onClick={() => navigate('/')}
-                className="cursor-pointer p-4 rounded-lg border-2 border-green-200 bg-green-50 hover:bg-green-100 transition-all hover:shadow-md group"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <Building2 className="h-6 w-6 text-green-600" />
-                  <ArrowRight className="h-4 w-4 text-green-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-                <div className="text-2xl font-bold text-green-900">{hospitalStats.ayushman}</div>
-                <div className="text-sm text-green-700 font-medium">Ayushman</div>
-                <div className="text-xs text-green-600 mt-1">patients</div>
-              </div>
-
-              {/* ESIC */}
-              <div
-                onClick={() => navigate('/esic-surgeons')}
-                className="cursor-pointer p-4 rounded-lg border-2 border-purple-200 bg-purple-50 hover:bg-purple-100 transition-all hover:shadow-md group"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <Stethoscope className="h-6 w-6 text-purple-600" />
-                  <ArrowRight className="h-4 w-4 text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-                <div className="text-2xl font-bold text-purple-900">{hospitalStats.esic}</div>
-                <div className="text-sm text-purple-700 font-medium">ESIC</div>
-                <div className="text-xs text-purple-600 mt-1">patients</div>
-              </div>
-
-              {/* CGHS */}
-              <div
-                onClick={() => navigate('/cghs-surgery')}
-                className="cursor-pointer p-4 rounded-lg border-2 border-orange-200 bg-orange-50 hover:bg-orange-100 transition-all hover:shadow-md group"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <Stethoscope className="h-6 w-6 text-orange-600" />
-                  <ArrowRight className="h-4 w-4 text-orange-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-                <div className="text-2xl font-bold text-orange-900">{hospitalStats.cghs}</div>
-                <div className="text-sm text-orange-700 font-medium">CGHS</div>
-                <div className="text-xs text-orange-600 mt-1">patients</div>
-              </div>
-            </div>
-
-            {/* Quick Actions Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 pt-4 border-t">
-              <Button
-                variant="outline"
-                className="justify-start"
-                onClick={() => navigate('/operation-theatre')}
-              >
-                <Stethoscope className="h-4 w-4 mr-2" />
-                Operation Theatre
-              </Button>
-              <Button
-                variant="outline"
-                className="justify-start"
-                onClick={() => navigate('/accounting')}
-              >
-                <DollarSign className="h-4 w-4 mr-2" />
-                Accounting
-              </Button>
-              <Button
-                variant="outline"
-                className="justify-start"
-                onClick={() => navigate('/pharmacy')}
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                Pharmacy
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
-              <Button
-                variant="outline"
-                className="justify-start"
-                onClick={() => navigate('/lab')}
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                Lab
-              </Button>
-              <Button
-                variant="outline"
-                className="justify-start"
-                onClick={() => navigate('/radiology')}
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                Radiology
-              </Button>
-              <Button
-                variant="outline"
-                className="justify-start"
-                onClick={() => navigate('/bill-management')}
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                Bill Management
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Today's Appointments */}
           <div className="lg:col-span-2">
@@ -1121,6 +997,130 @@ const DoctorDashboard: React.FC = () => {
             </Card>
           </div>
         </div>
+
+        {/* Hospital Management Quick Access */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Building2 className="h-5 w-5 mr-2" />
+              Hospital Management
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Hope Hospital */}
+              <div
+                onClick={() => navigate('/')}
+                className="cursor-pointer p-4 rounded-lg border-2 border-blue-200 bg-blue-50 hover:bg-blue-100 transition-all hover:shadow-md group"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <Building2 className="h-6 w-6 text-blue-600" />
+                  <ArrowRight className="h-4 w-4 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+                <div className="text-2xl font-bold text-blue-900">{hospitalStats.hope}</div>
+                <div className="text-sm text-blue-700 font-medium">Hope Hospital</div>
+                <div className="text-xs text-blue-600 mt-1">patients</div>
+              </div>
+
+              {/* Ayushman Hospital */}
+              <div
+                onClick={() => navigate('/')}
+                className="cursor-pointer p-4 rounded-lg border-2 border-green-200 bg-green-50 hover:bg-green-100 transition-all hover:shadow-md group"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <Building2 className="h-6 w-6 text-green-600" />
+                  <ArrowRight className="h-4 w-4 text-green-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+                <div className="text-2xl font-bold text-green-900">{hospitalStats.ayushman}</div>
+                <div className="text-sm text-green-700 font-medium">Ayushman</div>
+                <div className="text-xs text-green-600 mt-1">patients</div>
+              </div>
+
+              {/* ESIC */}
+              <div
+                onClick={() => navigate('/esic-surgeons')}
+                className="cursor-pointer p-4 rounded-lg border-2 border-purple-200 bg-purple-50 hover:bg-purple-100 transition-all hover:shadow-md group"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <Stethoscope className="h-6 w-6 text-purple-600" />
+                  <ArrowRight className="h-4 w-4 text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+                <div className="text-2xl font-bold text-purple-900">{hospitalStats.esic}</div>
+                <div className="text-sm text-purple-700 font-medium">ESIC</div>
+                <div className="text-xs text-purple-600 mt-1">patients</div>
+              </div>
+
+              {/* CGHS */}
+              <div
+                onClick={() => navigate('/cghs-surgery')}
+                className="cursor-pointer p-4 rounded-lg border-2 border-orange-200 bg-orange-50 hover:bg-orange-100 transition-all hover:shadow-md group"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <Stethoscope className="h-6 w-6 text-orange-600" />
+                  <ArrowRight className="h-4 w-4 text-orange-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+                <div className="text-2xl font-bold text-orange-900">{hospitalStats.cghs}</div>
+                <div className="text-sm text-orange-700 font-medium">CGHS</div>
+                <div className="text-xs text-orange-600 mt-1">patients</div>
+              </div>
+            </div>
+
+            {/* Quick Actions Row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 pt-4 border-t">
+              <Button
+                variant="outline"
+                className="justify-start"
+                onClick={() => navigate('/operation-theatre')}
+              >
+                <Stethoscope className="h-4 w-4 mr-2" />
+                Operation Theatre
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start"
+                onClick={() => navigate('/accounting')}
+              >
+                <DollarSign className="h-4 w-4 mr-2" />
+                Accounting
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start"
+                onClick={() => navigate('/pharmacy')}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Pharmacy
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+              <Button
+                variant="outline"
+                className="justify-start"
+                onClick={() => navigate('/lab')}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Lab
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start"
+                onClick={() => navigate('/radiology')}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Radiology
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start"
+                onClick={() => navigate('/bill-management')}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Bill Management
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   </div>

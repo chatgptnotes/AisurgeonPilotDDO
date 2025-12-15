@@ -397,7 +397,7 @@ async function sendEmailReminder(
 `
 
     const payload = {
-      from: 'AI Surgeon Pilot <noreply@aisurgeonpilot.com>',
+      from: 'AI Surgeon Pilot <onboarding@resend.dev>',
       to: [email],
       subject: `Reminder: Your Video Consultation with Dr. ${params.doctorName} starts in 15 minutes`,
       html: htmlContent

@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: aisurgeonpilot-email-server
+    env: node
+    buildCommand: npm install
+    startCommand: node server/email-server.js
+    envVars:
+      - key: VITE_RESEND_API_KEY
+        sync: false
+      - key: VITE_FROM_EMAIL
+        value: onboarding@resend.dev
+      - key: PORT
+        value: 3001
+      - key: NODE_ENV
+        value: production

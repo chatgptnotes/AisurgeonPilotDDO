@@ -41,13 +41,13 @@ class EmailService {
   private apiUrl: string;
 
   constructor() {
-    // Resend API configuration via proxy server (to avoid CORS)
+    // Resend API configuration via Express server (to avoid CORS)
     this.apiKey = import.meta.env.VITE_RESEND_API_KEY || '';
     // Use Resend's test domain for development (onboarding@resend.dev)
     // Switch to your verified domain in production: noreply@aisurgeonpilot.com
     this.fromEmail = import.meta.env.VITE_FROM_EMAIL || 'onboarding@resend.dev';
-    // Use local proxy server to bypass CORS
-    this.apiUrl = 'http://localhost:3001/api/send-email';
+    // Email server URL - use env variable for production, localhost for development
+    this.apiUrl = import.meta.env.VITE_EMAIL_SERVER_URL || 'http://localhost:3001/api/send-email';
   }
 
   /**

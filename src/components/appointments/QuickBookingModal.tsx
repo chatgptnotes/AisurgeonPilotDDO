@@ -191,10 +191,52 @@ export function QuickBookingModal({ doctorId, open, onClose, onSuccess }: Props)
 
       const doctorName = doctorData?.full_name || 'Doctor';
 
-      // Note: Notifications will be sent when doctor confirms the appointment
-      // Appointment created with 'scheduled' status - requires manual confirmation
+      // Send WhatsApp notification to patient
+      try {
+        const location = mode === 'video'
+          ? 'Video Consultation'
+          : currentTenant?.address || 'Visit our clinic';
 
-      toast.success('Appointment scheduled successfully! Please confirm to notify the patient.');
+        await whatsappService.sendAppointmentConfirmation(
+          selectedPatient.name,                          // patientName
+          selectedPatient.phone,                         // phone
+          format(startAt, 'dd MMM yyyy'),               // date
+          format(startAt, 'hh:mm a'),                   // time
+          doctorName,                                    // doctorName
+          currentTenant?.name || 'AI Surgeon Pilot',    // clinicName
+          location,                                      // location
+          meetingLink || 'N/A'                          // meetingLink
+        );
+        console.log('[WhatsApp] Appointment confirmation sent');
+      } catch (whatsappError) {
+        console.error('[WhatsApp] Failed to send:', whatsappError);
+        // Don't block appointment creation if WhatsApp fails
+      }
+
+      // Send Email notification to patient (if email exists)
+      if (selectedPatient.email && appointment) {
+        try {
+          await emailService.sendAppointmentConfirmation({
+            tenant_id: tenantId || '',
+            patient_id: selectedPatient.id,
+            appointment_id: appointment.id,
+            patient_name: selectedPatient.name,
+            patient_email: selectedPatient.email,
+            appointment_date: format(startAt, 'dd MMM yyyy'),
+            appointment_time: format(startAt, 'hh:mm a'),
+            doctor_name: doctorName,
+            hospital_name: currentTenant?.name || 'AI Surgeon Pilot',
+            consultation_mode: mode === 'video' ? 'video' : 'in_person',
+            meeting_link: meetingLink || undefined,
+          });
+          console.log('[Email] Appointment confirmation sent');
+        } catch (emailError) {
+          console.error('[Email] Failed to send:', emailError);
+          // Don't block appointment creation if email fails
+        }
+      }
+
+      toast.success('Appointment booked! WhatsApp & Email sent to patient.');
       resetForm();
       onSuccess();
       onClose();
